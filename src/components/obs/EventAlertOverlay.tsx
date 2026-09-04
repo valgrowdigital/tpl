@@ -1,6 +1,6 @@
 import { AnimatePresence, motion } from "framer-motion";
 import type { ObsBroadcastEvent } from "@/hooks/useObsMatchEvents";
-import { Sparkles } from "lucide-react";
+import { Sparkles, AlertTriangle, Zap, User, Flame, Trophy } from "lucide-react";
 
 interface EventAlertOverlayProps {
   event: ObsBroadcastEvent | null;
@@ -19,7 +19,7 @@ export function EventAlertOverlay({ event }: EventAlertOverlayProps) {
             transition={{ type: "spring", damping: 15, stiffness: 280 }}
             className="relative flex flex-col items-center justify-center"
           >
-            {/* ── 1. FOUR EVENT (Center TV Pop) ────────────────────────────── */}
+            {/* ── 1. FOUR EVENT (Center TV Pop + Tournament 4s Counter) ──────── */}
             {event.type === "FOUR" && (
               <div className="relative flex flex-col items-center justify-center">
                 {/* Radial Golden Burst Glow */}
@@ -60,8 +60,16 @@ export function EventAlertOverlay({ event }: EventAlertOverlayProps) {
 
                   {/* Batter Name Pill */}
                   {event.batterName && (
-                    <div className="text-xs sm:text-sm font-black uppercase tracking-wider text-white/90 bg-white/10 px-4 py-1 rounded-full border border-white/15 mb-4 truncate max-w-[280px]">
+                    <div className="text-xs sm:text-sm font-black uppercase tracking-wider text-white/90 bg-white/10 px-4 py-1 rounded-full border border-white/15 mb-3 truncate max-w-[280px]">
                       {event.batterName}
+                    </div>
+                  )}
+
+                  {/* Tournament Fours Tracker Pill */}
+                  {typeof event.tournamentTotalFours === "number" && event.tournamentTotalFours > 0 && (
+                    <div className="inline-flex items-center gap-2 px-3.5 py-1 rounded-full bg-amber-500/15 border border-amber-500/40 text-[10px] font-black uppercase tracking-widest text-amber-300 mb-4 shadow-sm">
+                      <Flame className="w-3.5 h-3.5 text-amber-400 animate-pulse" />
+                      <span>TOURNAMENT 4s: {event.tournamentTotalFours}</span>
                     </div>
                   )}
 
@@ -80,7 +88,7 @@ export function EventAlertOverlay({ event }: EventAlertOverlayProps) {
               </div>
             )}
 
-            {/* ── 2. SIX EVENT (Center TV Pop) ─────────────────────────────── */}
+            {/* ── 2. SIX EVENT (Center TV Pop + Tournament 6s Counter) ───────── */}
             {event.type === "SIX" && (
               <div className="relative flex flex-col items-center justify-center">
                 {/* Radial Golden Flare Burst Glow */}
@@ -122,8 +130,16 @@ export function EventAlertOverlay({ event }: EventAlertOverlayProps) {
 
                   {/* Batter Name Pill */}
                   {event.batterName && (
-                    <div className="text-xs sm:text-sm font-black uppercase tracking-wider text-white/90 bg-white/10 px-4 py-1 rounded-full border border-white/15 mb-4 truncate max-w-[280px]">
+                    <div className="text-xs sm:text-sm font-black uppercase tracking-wider text-white/90 bg-white/10 px-4 py-1 rounded-full border border-white/15 mb-3 truncate max-w-[280px]">
                       {event.batterName}
+                    </div>
+                  )}
+
+                  {/* Tournament Sixes Tracker Pill */}
+                  {typeof event.tournamentTotalSixes === "number" && event.tournamentTotalSixes > 0 && (
+                    <div className="inline-flex items-center gap-2 px-3.5 py-1 rounded-full bg-[#D9A928]/25 border border-[#D9A928]/60 text-[10px] font-black uppercase tracking-widest text-[#FFF0B3] mb-4 shadow-[0_0_15px_rgba(217,169,40,0.3)]">
+                      <Zap className="w-3.5 h-3.5 text-[#D9A928] animate-bounce" />
+                      <span>TOURNAMENT 6s: {event.tournamentTotalSixes}</span>
                     </div>
                   )}
 
@@ -142,7 +158,108 @@ export function EventAlertOverlay({ event }: EventAlertOverlayProps) {
               </div>
             )}
 
-            {/* ── 3. WICKET EVENT (Center TV Pop) ──────────────────────────── */}
+            {/* ── 3. NO BALL POPUP ALERT ────────────────────────────────────── */}
+            {event.type === "NO_BALL" && (
+              <div className="relative flex flex-col items-center justify-center">
+                {/* Red/Orange Warning Glow */}
+                <div className="absolute -inset-16 bg-gradient-to-r from-red-600/40 via-amber-500/30 to-red-600/40 blur-3xl rounded-full pointer-events-none animate-pulse" />
+
+                {/* Main TV Alert Box */}
+                <div className="relative bg-gradient-to-b from-[#220707]/98 via-[#140505]/98 to-black/98 border-2 border-red-500 rounded-3xl p-8 sm:p-10 shadow-[0_0_80px_rgba(239,68,68,0.55),0_0_40px_rgba(0,0,0,0.9)] backdrop-blur-2xl flex flex-col items-center text-center min-w-[340px] max-w-[460px]">
+                  
+                  {/* Top Alert Badge */}
+                  <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-red-600/25 border border-red-500/70 mb-3 shadow-inner">
+                    <AlertTriangle className="w-4 h-4 text-red-400 animate-bounce" />
+                    <span className="text-xs font-black uppercase tracking-[0.3em] text-red-400">
+                      EXTRA
+                    </span>
+                    <AlertTriangle className="w-4 h-4 text-red-400 animate-bounce" />
+                  </div>
+
+                  {/* NO BALL Giant Title */}
+                  <div className="text-4xl sm:text-5xl font-black uppercase tracking-widest text-transparent bg-clip-text bg-gradient-to-b from-white via-red-200 to-red-500 drop-shadow-[0_8px_20px_rgba(239,68,68,0.5)] my-2">
+                    NO BALL
+                  </div>
+
+                  {/* FREE HIT NEXT Animated Banner */}
+                  <div className="inline-flex items-center gap-2 px-5 py-2 rounded-xl bg-gradient-to-r from-[#D9A928]/25 via-amber-400/35 to-[#D9A928]/25 border-2 border-[#D9A928] text-xs sm:text-sm font-black uppercase tracking-widest text-[#FFF0B3] my-2 shadow-[0_0_20px_rgba(217,169,40,0.4)] animate-pulse">
+                    <Zap className="w-4 h-4 text-[#D9A928]" />
+                    <span>FREE HIT NEXT DELIVERY</span>
+                    <Zap className="w-4 h-4 text-[#D9A928]" />
+                  </div>
+
+                  {/* Bowler Details */}
+                  {event.bowlerName && (
+                    <p className="text-xs font-bold text-white/70 uppercase tracking-wider mt-2 mb-4">
+                      Bowler: <span className="text-white font-black">{event.bowlerName}</span>
+                    </p>
+                  )}
+
+                  {/* Footer Branding */}
+                  <div className="w-full pt-4 border-t border-red-500/40 flex items-center justify-center gap-2.5">
+                    <img
+                      src="/valgrow-labs-logo.jpeg"
+                      alt="ValGrow Labs"
+                      className="h-5 w-5 rounded object-cover shadow-md"
+                    />
+                    <p className="text-[11px] font-black uppercase tracking-[0.2em] text-white">
+                      <span className="text-[#D9A928]">POWERED BY</span> VALGROW LABS
+                    </p>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* ── 4. NEW BATTER AT THE CREASE BANNER ─────────────────────────── */}
+            {event.type === "NEW_BATTER" && (
+              <div className="relative flex flex-col items-center justify-center">
+                <div className="absolute -inset-14 bg-gradient-to-r from-[#D9A928]/30 via-indigo-600/20 to-[#D9A928]/30 blur-3xl rounded-full pointer-events-none animate-pulse" />
+
+                <div className="relative bg-gradient-to-b from-[#161616]/98 via-[#0F0F0F]/98 to-black/98 border-2 border-[#D9A928] rounded-3xl p-7 sm:p-8 shadow-[0_0_70px_rgba(217,169,40,0.45),0_0_40px_rgba(0,0,0,0.9)] backdrop-blur-2xl flex flex-col items-center text-center min-w-[340px] max-w-[440px]">
+                  
+                  {/* Top Badge */}
+                  <div className="inline-flex items-center gap-2 px-4 py-1 rounded-full bg-[#D9A928]/20 border border-[#D9A928]/60 mb-3 shadow-inner">
+                    <User className="w-3.5 h-3.5 text-[#D9A928]" />
+                    <span className="text-[11px] font-black uppercase tracking-[0.25em] text-[#D9A928]">
+                      NEW BATTER AT THE CREASE
+                    </span>
+                  </div>
+
+                  {/* Batter Name */}
+                  <div className="text-2xl sm:text-3xl font-black uppercase tracking-wide text-white drop-shadow-md my-1">
+                    {event.batterName}
+                  </div>
+
+                  {/* Team & Role Pill */}
+                  <div className="flex flex-wrap items-center justify-center gap-2 my-2">
+                    {event.teamName && (
+                      <span className="px-3 py-0.5 rounded-md bg-white/10 border border-white/20 text-xs font-bold uppercase text-white/90">
+                        {event.teamName}
+                      </span>
+                    )}
+                    {event.role && (
+                      <span className="px-3 py-0.5 rounded-md bg-[#D9A928]/15 border border-[#D9A928]/40 text-xs font-extrabold uppercase text-[#D9A928]">
+                        {event.role}
+                      </span>
+                    )}
+                  </div>
+
+                  {/* Footer Branding */}
+                  <div className="w-full pt-4 border-t border-[#D9A928]/40 flex items-center justify-center gap-2.5 mt-2">
+                    <img
+                      src="/valgrow-labs-logo.jpeg"
+                      alt="ValGrow Labs"
+                      className="h-5 w-5 rounded object-cover shadow-md"
+                    />
+                    <p className="text-[11px] font-black uppercase tracking-[0.2em] text-white">
+                      <span className="text-[#D9A928]">POWERED BY</span> VALGROW LABS
+                    </p>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* ── 5. WICKET EVENT (Center TV Pop) ──────────────────────────── */}
             {event.type === "WICKET" && (
               <div className="relative flex flex-col items-center justify-center">
                 <div className="absolute -inset-16 bg-gradient-to-r from-red-600/35 via-rose-600/20 to-red-600/35 blur-3xl rounded-full pointer-events-none animate-pulse" />
@@ -186,7 +303,7 @@ export function EventAlertOverlay({ event }: EventAlertOverlayProps) {
               </div>
             )}
 
-            {/* ── 4. FIFTY EVENT ───────────────────────────────────────────── */}
+            {/* ── 6. FIFTY EVENT ───────────────────────────────────────────── */}
             {event.type === "FIFTY" && (
               <div className="relative bg-[#111111]/95 text-white border-2 border-[#D9A928] rounded-2xl p-6 shadow-2xl flex flex-col items-center gap-2 backdrop-blur-xl">
                 <div className="text-xs font-black uppercase tracking-[0.2em] text-[#D9A928]">
@@ -201,7 +318,7 @@ export function EventAlertOverlay({ event }: EventAlertOverlayProps) {
               </div>
             )}
 
-            {/* ── 5. CENTURY EVENT ─────────────────────────────────────────── */}
+            {/* ── 7. CENTURY EVENT ─────────────────────────────────────────── */}
             {event.type === "CENTURY" && (
               <div className="relative bg-[#111111]/95 text-white border-2 border-[#D9A928] rounded-2xl p-6 shadow-2xl flex flex-col items-center gap-2 backdrop-blur-xl">
                 <div className="text-xs font-black uppercase tracking-[0.2em] text-[#D9A928]">

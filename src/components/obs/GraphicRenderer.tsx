@@ -115,6 +115,40 @@ export function GraphicRenderer({ matchId, backgroundStreamUrl, isPreview = fals
             <ScoreboardBar stream={stream} />
           </ObsLayout>
         );
+      case "NO_BALL":
+        return (
+          <ObsLayout backgroundStreamUrl={backgroundStreamUrl} isPreview={isPreview}>
+            <EventAlertOverlay
+              event={{
+                id: activeGraphic.payload?.eventId || "handler-noball-active",
+                type: "NO_BALL",
+                priority: 100,
+                durationMs: 4000,
+                bowlerName: activeGraphic.payload?.bowlerName || stream.currentBowler?.name || "BOWLER",
+                freeHitNext: true,
+                runs: 1,
+              }}
+            />
+            <ScoreboardBar stream={stream} />
+          </ObsLayout>
+        );
+      case "NEW_BATTER":
+        return (
+          <ObsLayout backgroundStreamUrl={backgroundStreamUrl} isPreview={isPreview}>
+            <EventAlertOverlay
+              event={{
+                id: activeGraphic.payload?.eventId || "handler-newbatter-active",
+                type: "NEW_BATTER",
+                priority: 100,
+                durationMs: 4000,
+                batterName: activeGraphic.payload?.batterName || stream.striker?.name || "BATTER",
+                teamName: activeGraphic.payload?.teamName || stream.battingTeam?.name,
+                role: activeGraphic.payload?.role,
+              }}
+            />
+            <ScoreboardBar stream={stream} />
+          </ObsLayout>
+        );
       case "LIVE_SCORE":
         // Fallthrough to standard live view
         break;

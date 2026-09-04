@@ -5,6 +5,8 @@ export type GraphicType =
   | "LIVE_SCORE"
   | "FOUR"
   | "SIX"
+  | "NO_BALL"
+  | "NEW_BATTER"
   | "WICKET"
   | "SQUADS"
   | "PARTNERSHIP"

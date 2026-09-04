@@ -1,8 +1,9 @@
-import { useEffect, useRef, useState, useCallback } from "react";
+import { useEffect, useRef, useState, useCallback, useMemo } from "react";
 import type { ObsMatchStreamResult } from "@/hooks/useObsMatchStream";
 import { BALLS_PER_OVER } from "@/types/cricket";
 import { lookup } from "@/lib/repositories";
-import { usePlayers, useTeams } from "@/hooks/useCricketData";
+import { usePlayers, useTeams, useMatches } from "@/hooks/useCricketData";
+import { calculateTournamentStats } from "@/lib/scoring/statistics";
 
 export type ObsBroadcastEvent =
   | {
@@ -13,6 +14,7 @@ export type ObsBroadcastEvent =
       batterName: string;
       runs: number;
       balls: number;
+      tournamentTotalFours?: number;
     }
   | {
       id: string;
@@ -22,6 +24,16 @@ export type ObsBroadcastEvent =
       batterName: string;
       runs: number;
       balls: number;
+      tournamentTotalSixes?: number;
+    }
+  | {
+      id: string;
+      type: "NO_BALL";
+      priority: number;
+      durationMs: number;
+      bowlerName: string;
+      freeHitNext: boolean;
+      runs: number;
     }
   | {
       id: string;
@@ -60,6 +72,7 @@ export type ObsBroadcastEvent =
       priority: number;
       durationMs: number;
       batterName: string;
+      teamName?: string;
       role?: string;
     }
   | {
@@ -131,22 +144,29 @@ const EVENT_PRIORITIES = {
   INNINGS_BREAK: 90,
   WICKET: 80,
   CENTURY: 70,
+  NO_BALL: 65,
   FIFTY: 60,
   PARTNERSHIP: 55,
   SIX: 50,
-  FOUR: 40,
+  FOUR: 45,
+  NEW_BATTER: 40,
   OVER_COMPLETE: 30,
-  NEW_BATTER: 20,
-  NEW_BOWLER: 15,
+  NEW_BOWLER: 20,
   MATCH_START: 10,
 };
 
 export function useObsMatchEvents(stream: ObsMatchStreamResult) {
+  const { data: matches = [] } = useMatches();
   const { data: players = [] } = usePlayers();
   const { data: teams = [] } = useTeams();
 
   const [currentEvent, setCurrentEvent] = useState<ObsBroadcastEvent | null>(null);
   const queueRef = useRef<ObsBroadcastEvent[]>([]);
+
+  // Tournament-wide boundary statistics
+  const tournamentStats = useMemo(() => {
+    return calculateTournamentStats(matches);
+  }, [matches]);
 
   // State refs to detect genuine transitions
   const lastMatchIdRef = useRef<string | null>(null);
@@ -297,7 +317,7 @@ export function useObsMatchEvents(stream: ObsMatchStreamResult) {
       });
     }
 
-    // ── 3. DELIVERY EVENTS (WICKET, SIX, FOUR, MILESTONES) ───────────────────
+    // ── 3. DELIVERY EVENTS (NO BALL, WICKET, SIX, FOUR, MILESTONES) ──────────
     const newDeliveries = allDeliveries.filter((d) => d?.id && !processedDeliveryIdsRef.current.has(d.id));
 
     newDeliveries.forEach((deliv) => {
@@ -310,6 +330,19 @@ export function useObsMatchEvents(stream: ObsMatchStreamResult) {
       const runs = batterStats?.runs ?? Number(deliv.batterRuns ?? 0);
       const balls = batterStats?.balls ?? 1;
       const bRuns = Number(deliv.batterRuns ?? 0);
+
+      // Check for NO BALL
+      if (deliv.extraType === "noball") {
+        enqueueEvent({
+          id: `noball-${deliv.id}`,
+          type: "NO_BALL",
+          priority: EVENT_PRIORITIES.NO_BALL,
+          durationMs: 3500,
+          bowlerName: bowler,
+          freeHitNext: true,
+          runs: (deliv.extraRuns ?? 1) + (deliv.batterRuns ?? 0),
+        });
+      }
 
       // WICKET Takes Top Delivery Priority
       if (deliv.wicket) {
@@ -351,6 +384,7 @@ export function useObsMatchEvents(stream: ObsMatchStreamResult) {
           batterName: batter,
           runs,
           balls,
+          tournamentTotalSixes: (tournamentStats?.totalSixes ?? 0) + 1,
         });
       } else if (bRuns === 4) {
         enqueueEvent({
@@ -361,6 +395,7 @@ export function useObsMatchEvents(stream: ObsMatchStreamResult) {
           batterName: batter,
           runs,
           balls,
+          tournamentTotalFours: (tournamentStats?.totalFours ?? 0) + 1,
         });
       }
 
@@ -411,23 +446,34 @@ export function useObsMatchEvents(stream: ObsMatchStreamResult) {
       }
     }
 
-    // ── 5. NEW BATTER DETECTION ─────────────────────────────────────────────
-    if (currentInnings?.strikerId && !knownActiveBatterIdsRef.current.has(currentInnings.strikerId)) {
-      knownActiveBatterIdsRef.current.add(currentInnings.strikerId);
-      const batterStats = currentInnings.batters.find((b) => b.playerId === currentInnings.strikerId);
-      if ((batterStats?.balls ?? 0) === 0) {
-        enqueueEvent({
-          id: `new-batter-${currentInnings.strikerId}`,
-          type: "NEW_BATTER",
-          priority: EVENT_PRIORITIES.NEW_BATTER,
-          durationMs: 2200,
-          batterName: getPlayerName(currentInnings.strikerId),
-          role: getPlayerRole(currentInnings.strikerId),
-        });
-      }
+    // ── 5. NEW BATTER AT THE CREASE DETECTION ───────────────────────────────
+    if (currentInnings) {
+      const battingTeam = lookup.team(currentInnings.battingTeamId) || teams.find((t) => t.id === currentInnings.battingTeamId);
+      
+      const checkBatterEntry = (batterId?: string) => {
+        if (!batterId) return;
+        if (!knownActiveBatterIdsRef.current.has(batterId)) {
+          knownActiveBatterIdsRef.current.add(batterId);
+          const batterStats = currentInnings.batters.find((b) => b.playerId === batterId);
+          if ((batterStats?.balls ?? 0) <= 1) {
+            enqueueEvent({
+              id: `new-batter-${batterId}-${Date.now()}`,
+              type: "NEW_BATTER",
+              priority: EVENT_PRIORITIES.NEW_BATTER,
+              durationMs: 3800,
+              batterName: getPlayerName(batterId),
+              teamName: battingTeam?.name,
+              role: getPlayerRole(batterId),
+            });
+          }
+        }
+      };
+
+      checkBatterEntry(currentInnings.strikerId);
+      checkBatterEntry(currentInnings.nonStrikerId);
     }
 
-    // ── 7. PARTNERSHIP MILESTONE DETECTION (25, 50, 75, 100 runs) ──────────
+    // ── 6. PARTNERSHIP MILESTONE DETECTION (25, 50, 75, 100 runs) ──────────
     if (currentInnings?.partnership && currentInnings.partnership.runs >= 25) {
       const p = currentInnings.partnership;
       const bA = p.batterAId;
@@ -458,7 +504,17 @@ export function useObsMatchEvents(stream: ObsMatchStreamResult) {
         }
       });
     }
-  }, [stream.matchState, stream.loading, stream.currentInnings, stream.match, teams, getPlayerName, getPlayerRole, enqueueEvent]);
+  }, [
+    stream.matchState,
+    stream.loading,
+    stream.currentInnings,
+    stream.match,
+    teams,
+    tournamentStats,
+    getPlayerName,
+    getPlayerRole,
+    enqueueEvent,
+  ]);
 
   return {
     currentEvent,
