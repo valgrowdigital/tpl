@@ -73,6 +73,101 @@ function derivePlayerShortName(fullName: string): string {
   return `${initial}. ${last}`;
 }
 
+/**
+ * Canonical team identifier normalization for bulletproof matching across
+ * UUIDs, short codes, slugs, and full name variations.
+ */
+export function getTeamCanonicalKey(idOrSlugOrName?: string | null): string {
+  if (!idOrSlugOrName || !idOrSlugOrName.trim()) return "";
+  const s = idOrSlugOrName.toLowerCase().trim();
+
+  // Bary Mawathe Royals
+  if (
+    s === "832b3866-046c-4beb-970a-4d79cc72ba37" ||
+    s === "team-bmr" ||
+    s === "bmr" ||
+    s.includes("bary") ||
+    s.includes("mawathe") ||
+    s.includes("royals")
+  ) {
+    return "team-bmr";
+  }
+
+  // Thundu Capital
+  if (
+    s === "edcc603d-db13-4191-813c-44abb06c883c" ||
+    s === "team-tc" ||
+    s === "tc" ||
+    s.includes("thundu") ||
+    s.includes("capital")
+  ) {
+    return "team-tc";
+  }
+
+  // Kurunduwatte Legends
+  if (
+    s === "c1397164-6f86-4639-93e6-888e0091bb51" ||
+    s === "team-kl" ||
+    s === "kl" ||
+    s.includes("kurundu") ||
+    s.includes("legend")
+  ) {
+    return "team-kl";
+  }
+
+  // Riverside Kings
+  if (
+    s === "9d930c5d-c96b-43ef-8be7-fed8c71133df" ||
+    s === "team-rk" ||
+    s === "rk" ||
+    s.includes("riverside")
+  ) {
+    return "team-rk";
+  }
+
+  // New Garden Warriors
+  if (
+    s === "f36ace20-1b45-43e4-be94-7a0f8a678fd9" ||
+    s === "team-ngw" ||
+    s === "ngw" ||
+    s.includes("garden") ||
+    s.includes("warrior")
+  ) {
+    return "team-ngw";
+  }
+
+  // Dainagoda United
+  if (
+    s === "53a3ea75-b3cf-4908-a19b-d3f3b693b3fd" ||
+    s === "team-du" ||
+    s === "du" ||
+    s.includes("dainagoda")
+  ) {
+    return "team-du";
+  }
+
+  return s;
+}
+
+export function isPlayerInTeam(
+  player: { teamId?: string | null },
+  team: { id: string; slug?: string | null; shortName?: string | null; name?: string | null } | string | null | undefined
+): boolean {
+  if (!player || !player.teamId || !player.teamId.trim()) return false;
+  const playerTeamKey = getTeamCanonicalKey(player.teamId);
+  if (!playerTeamKey) return false;
+
+  let teamKey = "";
+  if (typeof team === "string") {
+    teamKey = getTeamCanonicalKey(team);
+  } else if (team && typeof team === "object") {
+    teamKey = getTeamCanonicalKey(team.id) || getTeamCanonicalKey(team.slug) || getTeamCanonicalKey(team.shortName) || getTeamCanonicalKey(team.name);
+  }
+
+  if (!teamKey) return false;
+  return playerTeamKey === teamKey;
+}
+
 export function toTeam(row: SupabaseTeam): Team {
   const fallbackLogo = getAuthoritativeLogo(row.id) || getAuthoritativeLogo(row.slug) || getAuthoritativeLogo(row.name);
   return {
@@ -111,7 +206,7 @@ export function toPlayer(row: SupabaseRegistration): Player {
       const rawTeams = window.localStorage.getItem("tpl_player_custom_teams");
       if (rawTeams) {
         const teamsMap = JSON.parse(rawTeams);
-        if (teamsMap[row.id] !== undefined) customTeam = teamsMap[row.id];
+        if (teamsMap[row.id]) customTeam = teamsMap[row.id];
       }
     } catch {}
   }
@@ -314,17 +409,10 @@ class LookupCache {
     const direct = this.teamsMap.get(idOrSlug);
     if (direct) return direct;
 
-    const normalized = idOrSlug.toLowerCase().trim();
+    const targetKey = getTeamCanonicalKey(idOrSlug);
     for (const t of this.teamsMap.values()) {
-      if (
-        t.id === idOrSlug ||
-        (t.slug && t.slug.toLowerCase() === normalized) ||
-        (t.shortName && t.shortName.toLowerCase() === normalized) ||
-        t.name.toLowerCase() === normalized ||
-        t.name.toLowerCase().replace(/[^a-z0-9]+/g, "-") === normalized
-      ) {
-        return t;
-      }
+      const tKey = getTeamCanonicalKey(t.id) || getTeamCanonicalKey(t.slug) || getTeamCanonicalKey(t.shortName) || getTeamCanonicalKey(t.name);
+      if (tKey === targetKey) return t;
     }
     return undefined;
   }
@@ -408,20 +496,11 @@ class LookupCache {
 
   playersOf(teamIdOrSlug: string): Player[] {
     if (!teamIdOrSlug || teamIdOrSlug.trim() === "") return [];
-    const resolvedTeam = this.team(teamIdOrSlug);
-    const validTargets = new Set<string>([teamIdOrSlug.toLowerCase().trim()]);
-    if (resolvedTeam) {
-      if (resolvedTeam.id) validTargets.add(resolvedTeam.id.toLowerCase().trim());
-      if (resolvedTeam.slug) validTargets.add(resolvedTeam.slug.toLowerCase().trim());
-      if (resolvedTeam.shortName) validTargets.add(resolvedTeam.shortName.toLowerCase().trim());
-      if (resolvedTeam.name) {
-        validTargets.add(resolvedTeam.name.toLowerCase().trim());
-        validTargets.add(resolvedTeam.name.toLowerCase().trim().replace(/[^a-z0-9]+/g, "-"));
-      }
-    }
+    const targetKey = getTeamCanonicalKey(teamIdOrSlug);
+    if (!targetKey) return [];
     return Array.from(this.playersMap.values()).filter((p) => {
       if (!p.teamId || p.teamId.trim() === "") return false;
-      return validTargets.has(p.teamId.toLowerCase().trim());
+      return getTeamCanonicalKey(p.teamId) === targetKey;
     });
   }
 

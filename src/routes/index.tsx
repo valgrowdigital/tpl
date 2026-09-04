@@ -13,7 +13,7 @@ import {
 import { Logo } from "@/components/brand/Logo";
 import { useMatches, usePlayers, useTeams, useLiveMatchState } from "@/hooks/useCricketData";
 import { calculateTournamentStats } from "@/lib/scoring/statistics";
-import { lookup } from "@/lib/repositories";
+import { lookup, isPlayerInTeam } from "@/lib/repositories";
 import { useMatchStore } from "@/lib/scoring/store";
 import { TeamLogo } from "@/components/team/TeamLogo";
 import type { Match, Team } from "@/types/cricket";
@@ -578,9 +578,6 @@ function LandingScreen() {
           {/* Franchise Cards Grid */}
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 sm:gap-8">
             {teams.map((team) => {
-              const teamPlayers = players.filter((p) => p.teamId === team.id);
-              const previewPlayers = teamPlayers.slice(0, 4);
-
               // Unique theme tokens per franchise
               const nameLower = (team.name || "").toLowerCase();
               const idLower = (team.id || "").toLowerCase();
@@ -659,20 +656,7 @@ function LandingScreen() {
 
               const teamSquad = (() => {
                 if (!team) return [];
-                const validTargets = new Set<string>();
-                if (team.id) validTargets.add(team.id.toLowerCase().trim());
-                if (team.slug) validTargets.add(team.slug.toLowerCase().trim());
-                if (team.shortName) validTargets.add(team.shortName.toLowerCase().trim());
-                if (team.name) {
-                  validTargets.add(team.name.toLowerCase().trim());
-                  validTargets.add(team.name.toLowerCase().trim().replace(/[^a-z0-9]+/g, "-"));
-                }
-
-                const matching = players.filter((p) => {
-                  if (!p.teamId || p.teamId.trim() === "") return false;
-                  return validTargets.has(p.teamId.toLowerCase().trim());
-                });
-
+                const matching = players.filter((p) => isPlayerInTeam(p, team));
                 return matching.length > 0 ? matching : lookup.playersOf(team.id);
               })();
 
@@ -765,20 +749,7 @@ function LandingScreen() {
       {selectedTeamForRoster && (() => {
         const rosterPlayers = (() => {
           if (!selectedTeamForRoster) return [];
-          const validTargets = new Set<string>();
-          if (selectedTeamForRoster.id) validTargets.add(selectedTeamForRoster.id.toLowerCase().trim());
-          if (selectedTeamForRoster.slug) validTargets.add(selectedTeamForRoster.slug.toLowerCase().trim());
-          if (selectedTeamForRoster.shortName) validTargets.add(selectedTeamForRoster.shortName.toLowerCase().trim());
-          if (selectedTeamForRoster.name) {
-            validTargets.add(selectedTeamForRoster.name.toLowerCase().trim());
-            validTargets.add(selectedTeamForRoster.name.toLowerCase().trim().replace(/[^a-z0-9]+/g, "-"));
-          }
-
-          const matching = players.filter((p) => {
-            if (!p.teamId || p.teamId.trim() === "") return false;
-            return validTargets.has(p.teamId.toLowerCase().trim());
-          });
-
+          const matching = players.filter((p) => isPlayerInTeam(p, selectedTeamForRoster));
           return matching.length > 0 ? matching : lookup.playersOf(selectedTeamForRoster.id);
         })();
 
