@@ -233,7 +233,8 @@ export function useObsMatchEvents(stream: ObsMatchStreamResult) {
   const getPlayerAvatar = useCallback(
     (id?: string) => {
       if (!id) return undefined;
-      return lookup.player(id)?.avatarUrl || players.find((p) => p.id === id)?.avatarUrl;
+      const p = lookup.player(id) || players.find((p) => p.id === id);
+      return p?.avatar || (p as any)?.avatarUrl || undefined;
     },
     [players]
   );

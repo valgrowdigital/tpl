@@ -233,7 +233,7 @@ function ObsBetweenMatches() {
         batterName: selectedBatterObj.name,
         teamName: currentSelectedTeamObj?.name || "Batting Team",
         role: selectedBatterObj.role || "Batsman",
-        avatar: selectedBatterObj.avatarUrl,
+        avatar: selectedBatterObj.avatar || (selectedBatterObj as any).avatarUrl || lookup.player(selectedBatterObj.id)?.avatar,
         stats: selectedBatterObj.battingStyle ? `Batting: ${selectedBatterObj.battingStyle}` : undefined,
       },
     });
