@@ -168,8 +168,8 @@ export function GraphicRenderer({ matchId, backgroundStreamUrl, isPreview = fals
     }
   }
 
-  // 2. Loading state for live match score
-  if (stream.loading) {
+  // 2. Loading state for live match score - keep transparent on live broadcast
+  if (stream.loading && isPreview) {
     return (
       <ObsLayout backgroundStreamUrl={backgroundStreamUrl} isPreview={isPreview}>
         <div className="bg-[#111111]/90 text-white border-t-2 border-[#D9A928] px-6 py-3 rounded-xl max-w-md mx-auto shadow-2xl backdrop-blur-md text-center">
@@ -184,7 +184,12 @@ export function GraphicRenderer({ matchId, backgroundStreamUrl, isPreview = fals
     );
   }
 
-  // 3. Check Innings Break (1st Innings Completed Showcase)
+  // 3. If no match is selected or match is upcoming with 0 balls bowled, stay clean and transparent
+  if (!matchId || !stream.match || (stream.match.status === "UPCOMING" && (!stream.currentInnings || stream.currentInnings.legalBalls === 0))) {
+    return <ObsLayout backgroundStreamUrl={backgroundStreamUrl} isPreview={isPreview} />;
+  }
+
+  // 4. Check Innings Break (1st Innings Completed Showcase)
   if (stream.matchState?.phase === "break") {
     return (
       <ObsLayout backgroundStreamUrl={backgroundStreamUrl} isPreview={isPreview}>
@@ -193,7 +198,7 @@ export function GraphicRenderer({ matchId, backgroundStreamUrl, isPreview = fals
     );
   }
 
-  // 4. Check Auto Match Result
+  // 5. Check Auto Match Result
   if (stream.isCompleted) {
     return (
       <ObsLayout backgroundStreamUrl={backgroundStreamUrl} isPreview={isPreview}>
@@ -202,7 +207,7 @@ export function GraphicRenderer({ matchId, backgroundStreamUrl, isPreview = fals
     );
   }
 
-  // 3. Normal Live Mode (Scoreboard + Event Queue)
+  // 6. Normal Live Mode (Scoreboard + Event Queue)
   return (
     <ObsLayout backgroundStreamUrl={backgroundStreamUrl} isPreview={isPreview}>
       <EventAlertOverlay event={events.currentEvent} />

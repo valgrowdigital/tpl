@@ -338,63 +338,108 @@ function ObsHandlerIndex() {
           </div>
 
           <button
-            disabled={!activeMatchId}
-            onClick={() =>
-              setGraphic({
-                type: "ADVERTISEMENT",
-                duration: 0,
-                payload: {
-                  title: "POWERED BY VALGROW LABS",
-                  subtitle: "Official Technology Partner",
-                  mediaUrl: "/valgrow-labs-logo.jpeg",
-                },
-              })
-            }
+            onClick={() => {
+              if (activeGraphic?.type === "ADVERTISEMENT") {
+                clearGraphic();
+              } else {
+                setGraphic({
+                  type: "ADVERTISEMENT",
+                  duration: 0,
+                  payload: {
+                    title: "POWERED BY VALGROW LABS",
+                    subtitle: "Official Technology Partner",
+                    mediaUrl: "/valgrow-labs-logo.jpeg",
+                  },
+                });
+              }
+            }}
             className={`tap w-full p-4 rounded-xl border flex items-center justify-between transition-all mb-3 ${
               activeGraphic?.type === "ADVERTISEMENT"
                 ? "bg-[#D9A928] text-black border-[#D9A928] shadow-[0_0_20px_rgba(217,169,40,0.5)]"
                 : "bg-gradient-to-r from-[#1A1A1A] to-[#141414] border-[#D9A928]/40 text-white hover:border-[#D9A928]"
-            } disabled:opacity-30`}
+            }`}
           >
             <div className="flex items-center gap-3">
               <div className="w-8 h-8 rounded-lg bg-black/40 flex items-center justify-center">
                 <Sparkles className="w-4 h-4 text-[#D9A928]" />
               </div>
               <div className="text-left">
-                <p className="text-xs font-black uppercase tracking-wider">RUN COMMERCIAL BREAK</p>
+                <p className="text-xs font-black uppercase tracking-wider">
+                  {activeGraphic?.type === "ADVERTISEMENT" ? "STOP COMMERCIAL BREAK" : "RUN COMMERCIAL BREAK"}
+                </p>
                 <p className="text-[9px] text-white/60">ValGrow Labs Sponsor Card</p>
               </div>
             </div>
             <span className="text-[9px] font-black uppercase px-2 py-1 rounded bg-black/30 tracking-widest">
-              {activeGraphic?.type === "ADVERTISEMENT" ? "PLAYING" : "SHOW"}
+              {activeGraphic?.type === "ADVERTISEMENT" ? "ON AIR (CLICK TO STOP)" : "SHOW"}
             </span>
           </button>
 
           <div className="grid grid-cols-2 gap-2">
             <button
-              disabled={!activeMatchId}
-              onClick={() => setGraphic({ type: "SQUADS", duration: 0 })}
+              onClick={() => {
+                if (activeGraphic?.type === "SQUADS") {
+                  clearGraphic();
+                } else {
+                  setGraphic({ type: "SQUADS", duration: 0 });
+                }
+              }}
               className={`tap p-3 rounded-xl border text-left transition-all ${
                 activeGraphic?.type === "SQUADS"
                   ? "bg-[#D9A928] text-black border-[#D9A928]"
                   : "bg-[#1A1A1A] border-[#333333] text-white hover:border-white/30"
-              } disabled:opacity-30`}
+              }`}
             >
               <p className="text-[10px] font-black uppercase tracking-wider">TEAM SQUADS</p>
               <p className="text-[9px] text-[#777777]">Playing XI Preview</p>
             </button>
 
             <button
-              disabled={!activeMatchId}
-              onClick={() => setGraphic({ type: "MATCH_RESULT", duration: 0 })}
+              onClick={() => {
+                if (activeGraphic?.type === "UPCOMING") {
+                  clearGraphic();
+                } else {
+                  setGraphic({ type: "UPCOMING", duration: 0 });
+                }
+              }}
+              className={`tap p-3 rounded-xl border text-left transition-all ${
+                activeGraphic?.type === "UPCOMING"
+                  ? "bg-[#D9A928] text-black border-[#D9A928]"
+                  : "bg-[#1A1A1A] border-[#333333] text-white hover:border-white/30"
+              }`}
+            >
+              <p className="text-[10px] font-black uppercase tracking-wider">UPCOMING FIXTURES</p>
+              <p className="text-[9px] text-[#777777]">Tournament Schedule</p>
+            </button>
+
+            <button
+              onClick={() => {
+                if (activeGraphic?.type === "MATCH_RESULT") {
+                  clearGraphic();
+                } else {
+                  setGraphic({ type: "MATCH_RESULT", duration: 0 });
+                }
+              }}
               className={`tap p-3 rounded-xl border text-left transition-all ${
                 activeGraphic?.type === "MATCH_RESULT"
                   ? "bg-[#D9A928] text-black border-[#D9A928]"
                   : "bg-[#1A1A1A] border-[#333333] text-white hover:border-white/30"
-              } disabled:opacity-30`}
+              }`}
             >
               <p className="text-[10px] font-black uppercase tracking-wider">MATCH RESULT</p>
-              <p className="text-[9px] text-[#777777]">Full post-match card</p>
+              <p className="text-[9px] text-[#777777]">Post-match card</p>
+            </button>
+
+            <button
+              onClick={() => setGraphic({ type: "IDLE" })}
+              className={`tap p-3 rounded-xl border text-left transition-all ${
+                activeGraphic?.type === "IDLE"
+                  ? "bg-[#D9A928] text-black border-[#D9A928]"
+                  : "bg-[#1A1A1A] border-[#333333] text-white hover:border-white/30"
+              }`}
+            >
+              <p className="text-[10px] font-black uppercase tracking-wider">CLEAR OVERLAY</p>
+              <p className="text-[9px] text-[#777777]">100% Empty Transparent</p>
             </button>
           </div>
         </div>

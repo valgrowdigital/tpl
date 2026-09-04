@@ -1,7 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useState } from "react";
 import { useObsHandlerMaster } from "@/hooks/useObsHandlerMaster";
-import { Users, Calendar, Trophy, Image as ImageIcon, Folder, Play, Square, Radio, RefreshCw, Maximize2, Target, Handshake } from "lucide-react";
+import { Users, Calendar, Trophy, Image as ImageIcon, Folder, Play, Square, Radio, RefreshCw, Maximize2, Target, Handshake, Sparkles, EyeOff } from "lucide-react";
 import { GraphicType, obsHandlerService } from "@/lib/obsHandlerService";
 import { useMatches } from "@/hooks/useCricketData";
 import { calculateTournamentStats } from "@/lib/scoring/statistics";
@@ -23,22 +23,34 @@ function ObsBetweenMatches() {
   const backgroundStreamUrl = obsStreamRepository.getStreamUrl(liveMatch?.id) || undefined;
 
   const graphics = [
+    { id: "ADVERTISEMENT", label: "SPONSOR AD BREAK", icon: Sparkles, desc: "Show ValGrow sponsor ad card" },
+    { id: "UPCOMING", label: "UPCOMING MATCHES", icon: Calendar, desc: "Show tournament next fixtures" },
+    { id: "SQUADS", label: "TEAM SQUADS", icon: Users, desc: "Playing XI & substitutes preview" },
     { id: "INNINGS_BREAK", label: "1ST INN SCORECARD", icon: Target, desc: "Show 1st innings stats & target" },
     { id: "PARTNERSHIP", label: "PARTNERSHIP", icon: Handshake, desc: "Current batting partnership" },
-    { id: "SQUADS", label: "TEAM SQUADS", icon: Users, desc: "Playing XI & substitutes" },
-    { id: "UPCOMING", label: "UPCOMING MATCHES", icon: Calendar, desc: "Show next fixtures" },
     { id: "PLAYER_AWARDS", label: "PLAYER AWARDS", icon: Trophy, desc: "Awards & leaderboards" },
-    { id: "CUSTOM", label: "CUSTOM GRAPHIC", icon: ImageIcon, desc: "Upload custom overlay" },
+    { id: "IDLE", label: "EMPTY / TRANSPARENT", icon: EyeOff, desc: "Clear all graphics (alpha transparent)" },
+    { id: "CUSTOM", label: "CUSTOM GRAPHIC", icon: ImageIcon, desc: "Upload custom overlay image" },
   ];
 
   const handleShow = (type: GraphicType) => {
-    let extraPayload = {};
+    if (type === "IDLE") {
+      setGraphic({ type: "IDLE" });
+      return;
+    }
+    let extraPayload: any = {};
     if (type === "PLAYER_AWARDS") {
       const stats = calculateTournamentStats(matches);
       extraPayload = {
         orangeCap: stats.orangeCap[0],
         purpleCap: stats.purpleCap[0],
         mvp: stats.mvpLeaderboard[0],
+      };
+    } else if (type === "ADVERTISEMENT") {
+      extraPayload = {
+        title: "POWERED BY VALGROW LABS",
+        subtitle: "Official Technology Partner",
+        mediaUrl: "/valgrow-labs-logo.jpeg",
       };
     }
     setGraphic({

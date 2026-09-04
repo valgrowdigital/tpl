@@ -79,18 +79,6 @@ function ObsLiveMasterPage() {
     }
   }, [activeMatchId]);
 
-  if (!activeMatchId) {
-    return (
-      <div className="w-full h-full flex items-center justify-center bg-transparent">
-        <div className="bg-[#111111]/90 text-white border border-[#333333] px-6 py-4 rounded-2xl shadow-2xl backdrop-blur-md text-center">
-          <span className="text-xs font-black uppercase tracking-widest text-[#D9A928]">
-            WAITING FOR ACTIVE TOURNAMENT MATCH...
-          </span>
-        </div>
-      </div>
-    );
-  }
-
   return <GraphicRenderer matchId={activeMatchId} backgroundStreamUrl={backgroundStreamUrl} />;
 }
 
