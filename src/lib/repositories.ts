@@ -91,6 +91,7 @@ export function toPlayer(row: SupabaseRegistration): Player {
   // Check localStorage custom overrides first
   let customAvatar: string | undefined;
   let customRole: PlayerRole | undefined;
+  let customTeam: string | undefined;
   if (typeof window !== "undefined") {
     try {
       const rawAvatars = window.localStorage.getItem("tpl_player_custom_avatars");
@@ -104,6 +105,13 @@ export function toPlayer(row: SupabaseRegistration): Player {
       if (rawRoles) {
         const rolesMap = JSON.parse(rawRoles);
         if (rolesMap[row.id]) customRole = rolesMap[row.id];
+      }
+    } catch {}
+    try {
+      const rawTeams = window.localStorage.getItem("tpl_player_custom_teams");
+      if (rawTeams) {
+        const teamsMap = JSON.parse(rawTeams);
+        if (teamsMap[row.id] !== undefined) customTeam = teamsMap[row.id];
       }
     } catch {}
   }
@@ -122,7 +130,7 @@ export function toPlayer(row: SupabaseRegistration): Player {
     name: row.player_name?.trim() || "Unknown Player",
     shortName: derivePlayerShortName(row.player_name || "Unknown Player"),
     role,
-    teamId: row.team_id || "",
+    teamId: customTeam !== undefined ? customTeam : (row.team_id || ""),
     avatar: customAvatar || row.profile_photo_url || undefined,
     referenceId: row.reference_id || undefined,
     slug: row.slug || (row.player_name ? row.player_name.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "") : undefined),
@@ -368,6 +376,16 @@ class LookupCache {
             }
             window.localStorage.setItem("tpl_player_custom_avatars", JSON.stringify(avatarsMap));
           }
+          if (patch.teamId !== undefined) {
+            const rawTeams = window.localStorage.getItem("tpl_player_custom_teams");
+            const teamsMap = rawTeams ? JSON.parse(rawTeams) : {};
+            if (patch.teamId) {
+              teamsMap[id] = patch.teamId;
+            } else {
+              delete teamsMap[id];
+            }
+            window.localStorage.setItem("tpl_player_custom_teams", JSON.stringify(teamsMap));
+          }
         } catch {}
       }
       return updated;
@@ -381,6 +399,7 @@ class LookupCache {
     if (resolvedTeam) {
       validIds.add(resolvedTeam.id);
       if (resolvedTeam.slug) validIds.add(resolvedTeam.slug);
+      if (resolvedTeam.name) validIds.add(resolvedTeam.name);
     }
     return Array.from(this.playersMap.values()).filter((p) => p.teamId && validIds.has(p.teamId));
   }
@@ -447,6 +466,7 @@ export interface PlayerRepository {
   search(query: string): Promise<Player[]>;
   updateRole(playerId: string, role: PlayerRole): Promise<Player>;
   updateAvatar(playerId: string, avatarUrl: string): Promise<Player>;
+  updateTeam(playerId: string, teamId: string | null): Promise<Player>;
 }
 
 
@@ -676,6 +696,27 @@ export class SupabasePlayerRepository implements PlayerRepository {
         );
       } catch (err) {
         console.warn("[updateAvatar] Supabase update notice:", err);
+      }
+    }
+    const result = updated || (await this.get(playerId));
+    if (!result) throw new Error(`Player ${playerId} not found`);
+    return result;
+  }
+
+  async updateTeam(playerId: string, teamId: string | null): Promise<Player> {
+    const updated = lookup.updatePlayer(playerId, { teamId: teamId || "" });
+    if (isSupabaseConfigured) {
+      try {
+        await withTimeout(
+          supabase
+            .from("registrations")
+            .update({ team_id: teamId || null })
+            .eq("id", playerId),
+          REQUEST_TIMEOUT_MS,
+          "Update player team timed out",
+        );
+      } catch (err) {
+        console.warn("[updateTeam] Supabase update notice:", err);
       }
     }
     const result = updated || (await this.get(playerId));

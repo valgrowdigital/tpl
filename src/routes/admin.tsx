@@ -154,6 +154,11 @@ function AdminPortalPage() {
   const [roleUpdateSuccess, setRoleUpdateSuccess] = useState<string | null>(null);
   const [isUpdatingRole, setIsUpdatingRole] = useState(false);
 
+  // Player team assignment state
+  const [editingPlayerTeamId, setEditingPlayerTeamId] = useState<string>("");
+  const [teamUpdateSuccess, setTeamUpdateSuccess] = useState<string | null>(null);
+  const [isUpdatingTeam, setIsUpdatingTeam] = useState(false);
+
   // Player photo / avatar edit state
   const [editingPlayerAvatar, setEditingPlayerAvatar] = useState<string | null>(null);
   const [avatarUpdateSuccess, setAvatarUpdateSuccess] = useState<string | null>(null);
@@ -1272,6 +1277,8 @@ function AdminPortalPage() {
                                 setSelectedPlayerForView(p);
                                 setEditingPlayerRole((p.role as PlayerRole) || "Batter");
                                 setRoleUpdateSuccess(null);
+                                setEditingPlayerTeamId(p.teamId || "");
+                                setTeamUpdateSuccess(null);
                                 setEditingPlayerAvatar(p.avatar || null);
                                 setAvatarUpdateSuccess(null);
                                 setAvatarUpdateError(null);
@@ -3142,6 +3149,68 @@ function AdminPortalPage() {
                 <p className="font-bold text-[#9A6A05] mt-0.5">
                   {selectedPlayerForView.soldPrice ? `${selectedPlayerForView.soldPrice} LKR` : "Standard"}
                 </p>
+              </div>
+            </div>
+
+            {/* Admin Team Assignment Control */}
+            <div className="p-3.5 rounded-2xl bg-[#EFF6FF] border border-[#BFDBFE] flex flex-col gap-2.5">
+              <div className="flex items-center justify-between">
+                <span className="text-[10px] font-black uppercase text-[#1E40AF] tracking-wider flex items-center gap-1.5">
+                  <Shield className="h-3.5 w-3.5 text-blue-600" />
+                  Official Team Assignment
+                </span>
+                {teamUpdateSuccess && (
+                  <span className="text-[10px] font-bold text-blue-700 bg-blue-100 px-2 py-0.5 rounded-md flex items-center gap-1">
+                    <CheckCircle2 className="h-3 w-3" />
+                    {teamUpdateSuccess}
+                  </span>
+                )}
+              </div>
+              <div className="flex items-center gap-2">
+                <select
+                  value={editingPlayerTeamId}
+                  onChange={(e) => setEditingPlayerTeamId(e.target.value)}
+                  disabled={isUpdatingTeam}
+                  className="flex-1 bg-white border border-[#D1D5DB] rounded-xl px-3 py-2 text-xs font-bold text-[#111827] focus:outline-none min-h-[44px]"
+                >
+                  <option value="">Unassigned / Free Agent</option>
+                  {teams.map((t) => (
+                    <option key={t.id} value={t.id}>
+                      {t.name} ({t.shortName || t.groupName || "Team"})
+                    </option>
+                  ))}
+                </select>
+                <button
+                  type="button"
+                  onClick={async () => {
+                    if (!selectedPlayerForView) return;
+                    setIsUpdatingTeam(true);
+                    try {
+                      const updated = await playerRepository.updateTeam(selectedPlayerForView.id, editingPlayerTeamId || null);
+                      setSelectedPlayerForView(updated);
+                      queryClient.invalidateQueries({ queryKey: ["players"] });
+                      await refetchPlayers();
+                      broadcastTournamentUpdate();
+                      const teamObj = lookup.team(editingPlayerTeamId);
+                      setTeamUpdateSuccess(teamObj ? `Assigned to ${teamObj.shortName || teamObj.name}` : "Set as Unassigned");
+                    } catch (err: any) {
+                      console.error("[handleUpdatePlayerTeam] error:", err);
+                    } finally {
+                      setIsUpdatingTeam(false);
+                    }
+                  }}
+                  disabled={isUpdatingTeam || editingPlayerTeamId === (selectedPlayerForView.teamId || "")}
+                  className="px-4 py-2 bg-[#1E40AF] hover:bg-blue-900 disabled:opacity-50 text-white font-black text-xs uppercase rounded-xl shadow-sm transition-colors min-h-[44px] flex items-center justify-center gap-1.5"
+                >
+                  {isUpdatingTeam ? (
+                    <>
+                      <RefreshCw className="h-3 w-3 animate-spin" />
+                      <span>Saving...</span>
+                    </>
+                  ) : (
+                    <span>Save Team</span>
+                  )}
+                </button>
               </div>
             </div>
 
