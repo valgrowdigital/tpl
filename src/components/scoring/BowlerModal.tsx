@@ -71,7 +71,7 @@ export function BowlerModal({
         <div className="mx-6 mt-4 p-2.5 rounded-xl bg-primary/10 border border-primary/20 text-[11px] text-foreground flex items-center gap-2">
           <ShieldAlert className="h-4 w-4 text-primary shrink-0" />
           <span>
-            <strong>Tournament Rule:</strong> Max 1 bowler can bowl 2 overs (10 balls). Other bowlers max 1 over (5 balls).
+            <strong>Tournament Rule:</strong> Each bowler is allowed to bowl <strong>at most 1 over (5 legal balls)</strong> per innings.
           </span>
         </div>
 
@@ -118,15 +118,10 @@ export function BowlerModal({
                         · {eligibility.reason}
                       </span>
                     )}
-                    {!isLocked && completedOvers === 1 && (
-                      <span className="text-amber-600 font-bold">
-                        · Eligible for 2nd over
-                      </span>
-                    )}
                   </div>
                 </div>
                 <div className="shrink-0 text-right text-xs text-muted-foreground tabular-nums font-bold">
-                  <p className={completedOvers >= 2 ? "text-red-500 font-black" : ""}>
+                  <p className={completedOvers >= 1 ? "text-red-500 font-black" : ""}>
                     {oversText(legalBalls)} / {quotaMax} ov
                   </p>
                   {stat && (

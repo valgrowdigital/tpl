@@ -478,44 +478,23 @@ export function validateBowlerEligibility(
     };
   }
 
-  // 2. Absolute max overs check (10 legal balls / 2 overs)
+  // 2. Strict 1 over maximum check per bowler (5 legal balls)
   const maxBallsAllowed = TPL_TOURNAMENT_RULES.MAX_OVERS_PER_BOWLER * BALLS_PER_OVER;
   if (legalBallsBowled >= maxBallsAllowed) {
     return {
       canBowl: false,
-      reason: `Bowler has reached the maximum of ${TPL_TOURNAMENT_RULES.MAX_OVERS_PER_BOWLER} overs (${maxBallsAllowed} legal balls).`,
+      reason: `Bowler has reached the maximum limit of ${TPL_TOURNAMENT_RULES.MAX_OVERS_PER_BOWLER} over (${maxBallsAllowed} legal balls).`,
       oversBowledText,
       legalBallsBowled,
       maxOversAllowed: TPL_TOURNAMENT_RULES.MAX_OVERS_PER_BOWLER,
     };
   }
 
-  // 3. Check 1-over bowler limit vs 2-over quota
-  const standardLimit = TPL_TOURNAMENT_RULES.STANDARD_BOWLER_MAX_OVERS * BALLS_PER_OVER;
-  if (legalBallsBowled >= standardLimit) {
-    // Check how many other bowlers in this innings have already bowled > 1 over
-    const otherBowlersWithMultipleOvers = (innings.bowlers || []).filter(
-      (b) => b.playerId !== bowlerId && b.legalBalls > standardLimit,
-    );
-    if (otherBowlersWithMultipleOvers.length >= TPL_TOURNAMENT_RULES.SECOND_OVER_BOWLER_COUNT) {
-      return {
-        canBowl: false,
-        reason: `Only ${TPL_TOURNAMENT_RULES.SECOND_OVER_BOWLER_COUNT} bowler can bowl 2 overs. This bowler has already completed 1 over.`,
-        oversBowledText,
-        legalBallsBowled,
-        maxOversAllowed: TPL_TOURNAMENT_RULES.STANDARD_BOWLER_MAX_OVERS,
-      };
-    }
-  }
-
   return {
     canBowl: true,
     oversBowledText,
     legalBallsBowled,
-    maxOversAllowed:
-      legalBallsBowled >= standardLimit
-        ? TPL_TOURNAMENT_RULES.MAX_OVERS_PER_BOWLER
-        : TPL_TOURNAMENT_RULES.STANDARD_BOWLER_MAX_OVERS,
+    maxOversAllowed: TPL_TOURNAMENT_RULES.MAX_OVERS_PER_BOWLER,
   };
 }
 

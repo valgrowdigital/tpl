@@ -4,9 +4,9 @@
 export const TPL_TOURNAMENT_RULES = {
   BALLS_PER_OVER: 5,
   DEFAULT_MATCH_OVERS: 5,
-  MAX_OVERS_PER_BOWLER: 2, // At most 1 bowler allowed 2 overs (10 legal balls)
-  SECOND_OVER_BOWLER_COUNT: 1, // Exactly 1 bowler can bowl 2 overs
-  STANDARD_BOWLER_MAX_OVERS: 1, // All other bowlers can bowl at most 1 over (5 legal balls)
+  MAX_OVERS_PER_BOWLER: 1, // Strictly 1 over max per bowler (5 legal balls)
+  SECOND_OVER_BOWLER_COUNT: 0, // No bowler allowed more than 1 over
+  STANDARD_BOWLER_MAX_OVERS: 1, // All bowlers can bowl at most 1 over (5 legal balls)
 } as const;
 
 export const BALLS_PER_OVER = TPL_TOURNAMENT_RULES.BALLS_PER_OVER;

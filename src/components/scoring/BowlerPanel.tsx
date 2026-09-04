@@ -24,11 +24,9 @@ export function BowlerPanel({ bowlerId, bowlers, innings, canChangeBowler, onCha
 
   let availabilityBadge = "";
   if (completedOvers >= TPL_TOURNAMENT_RULES.MAX_OVERS_PER_BOWLER) {
-    availabilityBadge = "2.0 / 2 OVERS · MAXIMUM REACHED";
-  } else if (completedOvers === 1 && !eligibility.canBowl) {
-    availabilityBadge = "1.0 / 1 OVER · OVER COMPLETE · CANNOT BOWL AGAIN";
-  } else if (completedOvers === 1 && eligibility.canBowl) {
-    availabilityBadge = "1.0 / 2 OVERS · ELIGIBLE FOR 2ND OVER";
+    availabilityBadge = "1.0 / 1 OVER · MAXIMUM REACHED";
+  } else {
+    availabilityBadge = `${oversText(legalBalls)} / 1.0 OVER`;
   }
 
   return (

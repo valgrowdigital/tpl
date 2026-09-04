@@ -359,6 +359,62 @@ export function EventAlertOverlay({ event }: EventAlertOverlayProps) {
               </div>
             )}
 
+            {/* ── 6b. NEW BOWLER INTRO OVERLAY (After Over Completion) ─────────── */}
+            {event.type === "NEW_BOWLER" && (
+              <div className="relative flex flex-col items-center justify-center">
+                <div className="absolute -inset-14 bg-gradient-to-r from-blue-500/35 via-cyan-400/20 to-blue-500/35 blur-3xl rounded-full pointer-events-none animate-pulse" />
+
+                <div className="relative bg-gradient-to-b from-[#10141D]/98 via-[#0A0D14]/98 to-black/98 border-2 border-blue-500/80 rounded-3xl p-7 sm:p-8 shadow-[0_0_80px_rgba(59,130,246,0.45),0_0_40px_rgba(0,0,0,0.9)] backdrop-blur-2xl flex flex-col items-center text-center min-w-[340px] max-w-[480px]">
+                  
+                  <div className="inline-flex items-center gap-2 px-4 py-1 rounded-full bg-blue-500/20 border border-blue-400/60 mb-3 shadow-inner">
+                    <Shield className="w-3.5 h-3.5 text-blue-400" />
+                    <span className="text-[11px] font-black uppercase tracking-[0.25em] text-blue-400">
+                      NEW BOWLER INTO ATTACK
+                    </span>
+                  </div>
+
+                  {/* Bowler Avatar */}
+                  <div className="w-20 h-20 sm:w-24 sm:h-24 rounded-full border-2 border-blue-400 overflow-hidden mb-3 shadow-[0_0_25px_rgba(59,130,246,0.4)] bg-gradient-to-br from-[#1E293B] to-black flex items-center justify-center flex-shrink-0">
+                    {event.avatar ? (
+                      <img src={event.avatar} alt={event.bowlerName} className="w-full h-full object-cover" />
+                    ) : (
+                      <User className="w-10 h-10 text-blue-400" />
+                    )}
+                  </div>
+
+                  <div className="text-2xl sm:text-3xl font-black uppercase tracking-wide text-white drop-shadow-md my-1 truncate max-w-[380px]">
+                    {event.bowlerName}
+                  </div>
+
+                  <div className="flex flex-wrap items-center justify-center gap-2 my-2">
+                    {event.teamName && (
+                      <span className="px-3 py-1 rounded-lg bg-white/10 border border-white/20 text-xs font-bold uppercase text-white/90 shadow-sm">
+                        {event.teamName}
+                      </span>
+                    )}
+                    {event.role && (
+                      <span className="px-3 py-1 rounded-lg bg-blue-500/20 border border-blue-400/50 text-xs font-extrabold uppercase text-blue-300 shadow-sm">
+                        {event.role}
+                      </span>
+                    )}
+                  </div>
+
+                  {event.figures && (
+                    <div className="text-[11px] font-mono text-white/80 bg-black/50 px-3.5 py-1 rounded-md border border-white/10 mt-1">
+                      Figures: {event.figures}
+                    </div>
+                  )}
+
+                  <div className="w-full pt-4 border-t border-blue-500/40 flex items-center justify-center gap-2.5 mt-2">
+                    <img src="/valgrow-labs-logo.jpeg" alt="ValGrow Labs" className="h-5 w-5 rounded object-cover shadow-md" />
+                    <p className="text-[11px] font-black uppercase tracking-[0.2em] text-white">
+                      <span className="text-[#D9A928]">POWERED BY</span> VALGROW LABS
+                    </p>
+                  </div>
+                </div>
+              </div>
+            )}
+
             {/* ── 7. WICKET EVENT (Center TV Pop) ──────────────────────────── */}
             {event.type === "WICKET" && (
               <div className="relative flex flex-col items-center justify-center">

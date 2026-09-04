@@ -4,6 +4,7 @@ import { BALLS_PER_OVER } from "@/types/cricket";
 import { lookup } from "@/lib/repositories";
 import { usePlayers, useTeams, useMatches } from "@/hooks/useCricketData";
 import { calculateTournamentStats } from "@/lib/scoring/statistics";
+import { oversText } from "@/lib/scoring/engine";
 
 export type ObsBroadcastEvent =
   | {
@@ -94,7 +95,10 @@ export type ObsBroadcastEvent =
       priority: number;
       durationMs: number;
       bowlerName: string;
+      teamName?: string;
       role?: string;
+      avatar?: string;
+      figures?: string;
     }
   | {
       id: string;
@@ -516,6 +520,29 @@ export function useObsMatchEvents(stream: ObsMatchStreamResult) {
           crr: currentInnings.crr,
         });
       }
+    }
+
+    // ── 5b. NEW BOWLER INTRO POPUP (After Over Completion or Opening Bowler) ──
+    const activeBowler = stream.bowler;
+    if (activeBowler?.id && activeBowler.id !== lastActiveBowlerIdRef.current) {
+      const bowlerId = activeBowler.id;
+      lastActiveBowlerIdRef.current = bowlerId;
+
+      const bowlingTeam = lookup.team(currentInnings?.bowlingTeamId) || teams.find((t) => t.id === currentInnings?.bowlingTeamId);
+      const bStat = currentInnings?.bowlers?.find((b) => b.playerId === bowlerId);
+      const figures = bStat ? `${bStat.wickets}/${bStat.runs} (${oversText(bStat.legalBalls)})` : undefined;
+
+      enqueueEvent({
+        id: `new-bowler-${bowlerId}-${Date.now()}`,
+        type: "NEW_BOWLER",
+        priority: EVENT_PRIORITIES.NEW_BOWLER,
+        durationMs: getCustomEventDuration(3800),
+        bowlerName: getPlayerName(bowlerId),
+        teamName: bowlingTeam?.name,
+        role: getPlayerRole(bowlerId) || "Bowler",
+        avatar: getPlayerAvatar(bowlerId),
+        figures,
+      });
     }
 
     // ── 6. NEW BATTER AT THE CREASE DETECTION ───────────────────────────────
