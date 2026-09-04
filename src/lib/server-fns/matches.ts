@@ -312,6 +312,121 @@ export const resetAllTournamentMatchesServerFn = createServerFn({ method: "POST"
   },
 );
 
+/**
+ * Server Function: Authoritatively resets ALL LIVE and COMPLETED matches back to 'scheduled' state.
+ * Clears deliveries, innings, toss, and scores while preserving fixtures and scheduled times.
+ */
+export const resetCompletedAndLiveMatchesServerFn = createServerFn({ method: "POST" }).handler(
+  async () => {
+    const supabaseAdmin = getServerSupabaseAdmin();
+
+    // 1. Fetch current matches to find live or completed match IDs
+    const { data: allMatches, error: fetchErr } = await supabaseAdmin
+      .from("matches")
+      .select("id, status");
+
+    if (fetchErr) {
+      throw new Error(`Failed to fetch matches: ${fetchErr.message}`);
+    }
+
+    const targetIds = (allMatches || [])
+      .filter((m) => {
+        const s = (m.status || "").toLowerCase().trim();
+        return s === "live" || s === "completed" || s === "finished" || s === "in_progress" || s === "abandoned";
+      })
+      .map((m) => m.id);
+
+    if (targetIds.length > 0) {
+      // 2. Delete deliveries and innings for these matches
+      try {
+        await supabaseAdmin.from("deliveries").delete().in("match_id", targetIds);
+      } catch (e) {
+        console.warn("[resetCompletedAndLiveMatchesServerFn] deliveries delete notice:", e);
+      }
+      try {
+        await supabaseAdmin.from("match_innings").delete().in("match_id", targetIds);
+      } catch (e) {
+        console.warn("[resetCompletedAndLiveMatchesServerFn] match_innings delete notice:", e);
+      }
+
+      // 3. Update status back to scheduled and reset match outcome fields
+      const { error: resetError } = await supabaseAdmin
+        .from("matches")
+        .update({
+          status: "scheduled",
+          toss_winner_id: null,
+          toss_decision: null,
+          man_of_the_match_id: null,
+        })
+        .in("id", targetIds);
+
+      if (resetError) {
+        console.warn("[resetCompletedAndLiveMatchesServerFn] update notice:", resetError.message);
+      }
+    }
+
+    // 4. Return fresh list of matches
+    const { data: updatedMatches, error: refetchError } = await supabaseAdmin
+      .from("matches")
+      .select("*")
+      .order("start_time", { ascending: true });
+
+    if (refetchError) {
+      throw new Error(`Failed to refetch matches: ${refetchError.message}`);
+    }
+
+    return (updatedMatches as SupabaseMatch[]) || [];
+  },
+);
+
+/**
+ * Server Function: Authoritatively resets a SINGLE match by ID back to 'scheduled' state.
+ * Clears deliveries, innings, toss, and scores for that match.
+ */
+export const resetSingleMatchServerFn = createServerFn({ method: "POST" })
+  .validator((d: { matchId: string }) => d)
+  .handler(async ({ data: { matchId } }) => {
+    if (!matchId) throw new Error("Match ID is required for reset.");
+    const supabaseAdmin = getServerSupabaseAdmin();
+
+    try {
+      await supabaseAdmin.from("deliveries").delete().eq("match_id", matchId);
+    } catch (e) {
+      console.warn("[resetSingleMatchServerFn] deliveries delete notice:", e);
+    }
+    try {
+      await supabaseAdmin.from("match_innings").delete().eq("match_id", matchId);
+    } catch (e) {
+      console.warn("[resetSingleMatchServerFn] match_innings delete notice:", e);
+    }
+
+    const { error: resetErr } = await supabaseAdmin
+      .from("matches")
+      .update({
+        status: "scheduled",
+        toss_winner_id: null,
+        toss_decision: null,
+        man_of_the_match_id: null,
+      })
+      .eq("id", matchId);
+
+    if (resetErr) {
+      console.warn("[resetSingleMatchServerFn] update notice:", resetErr.message);
+    }
+
+    const { data: allMatches, error: fetchError } = await supabaseAdmin
+      .from("matches")
+      .select("*")
+      .order("start_time", { ascending: true });
+
+    if (fetchError) {
+      throw new Error(`Failed to refetch matches: ${fetchError.message}`);
+    }
+
+    return (allMatches as SupabaseMatch[]) || [];
+  });
+
+
 
 export interface GenerateScheduleInput {
   group1TeamIds: string[];

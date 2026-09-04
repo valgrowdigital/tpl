@@ -140,6 +140,8 @@ function AdminPortalPage() {
   const [showSingleMatchModal, setShowSingleMatchModal] = useState(false);
   const [showResetConfirm, setShowResetConfirm] = useState(false);
   const [showResetAllModal, setShowResetAllModal] = useState(false);
+  const [showResetActiveModal, setShowResetActiveModal] = useState(false);
+  const [matchToResetSingle, setMatchToResetSingle] = useState<Match | null>(null);
   const [showScheduleGeneratorModal, setShowScheduleGeneratorModal] = useState(false);
   const [resetSuccessMsg, setResetSuccessMsg] = useState<string | null>(null);
 
@@ -694,6 +696,67 @@ function AdminPortalPage() {
     } catch (err: any) {
       console.error("[handleResetAllMatches] Error:", err);
       setScheduleActionError(err?.message || "Unable to reset all matches. Please try again.");
+    } finally {
+      setIsScheduleActionLoading(false);
+    }
+  };
+
+  // ── RESET COMPLETED & LIVE MATCHES HANDLER ──────────────────────────────
+  const handleResetCompletedAndLiveMatches = async () => {
+    setIsScheduleActionLoading(true);
+    setScheduleActionError(null);
+    setResetSuccessMsg(null);
+
+    try {
+      const resetMatches = await matchRepository.resetCompletedAndLiveMatches();
+      queryClient.setQueryData(["matches"], resetMatches);
+      setShowResetActiveModal(false);
+      setShowResetAllModal(false);
+      setShowResetConfirm(false);
+      setScheduleActionError(null);
+      setResetSuccessMsg(
+        "All LIVE and COMPLETED match data, innings, and deliveries have been reset back to UPCOMING for fresh testing! Fixture schedule remains preserved."
+      );
+
+      try {
+        broadcastTournamentUpdate();
+        await refetchMatches();
+      } catch (syncErr) {
+        console.warn("[handleResetCompletedAndLiveMatches] Background sync notice:", syncErr);
+      }
+    } catch (err: any) {
+      console.error("[handleResetCompletedAndLiveMatches] Error:", err);
+      setScheduleActionError(err?.message || "Unable to reset completed and live matches. Please try again.");
+    } finally {
+      setIsScheduleActionLoading(false);
+    }
+  };
+
+  // ── RESET SINGLE MATCH HANDLER ──────────────────────────────────────────
+  const handleResetSingleMatchSubmit = async () => {
+    if (!matchToResetSingle) return;
+    setIsScheduleActionLoading(true);
+    setScheduleActionError(null);
+    setResetSuccessMsg(null);
+
+    try {
+      const targetId = matchToResetSingle.id;
+      const matchNum = matchToResetSingle.matchNumber;
+      const updated = await matchRepository.resetSingleMatch(targetId);
+      queryClient.setQueryData(["matches"], updated);
+      setMatchToResetSingle(null);
+      setScheduleActionError(null);
+      setResetSuccessMsg(`Match #${String(matchNum).padStart(2, "0")} data, innings, and deliveries have been successfully reset back to scheduled state!`);
+
+      try {
+        broadcastTournamentUpdate();
+        await refetchMatches();
+      } catch (syncErr) {
+        console.warn("[handleResetSingleMatchSubmit] Background sync notice:", syncErr);
+      }
+    } catch (err: any) {
+      console.error("[handleResetSingleMatchSubmit] Error:", err);
+      setScheduleActionError(err?.message || "Unable to reset this match. Please try again.");
     } finally {
       setIsScheduleActionLoading(false);
     }
@@ -1575,6 +1638,26 @@ function AdminPortalPage() {
                 <button
                   type="button"
                   onClick={() => {
+                    const activeCount = matches.filter((m) => m.status === "LIVE" || m.status === "COMPLETED").length;
+                    if (activeCount === 0) {
+                      setScheduleActionError(null);
+                      setResetSuccessMsg("NO LIVE OR COMPLETED MATCHES TO RESET.");
+                      return;
+                    }
+                    setScheduleActionError(null);
+                    setShowResetActiveModal(true);
+                  }}
+                  disabled={isScheduleActionLoading}
+                  className="tap px-4 py-2.5 rounded-xl bg-amber-50 hover:bg-amber-100 border border-amber-300 text-amber-800 text-[10px] font-black uppercase tracking-wider transition-colors flex items-center gap-1.5 shadow-2xs"
+                  title="Resets all completed and live matches back to scheduled/upcoming, clearing test deliveries and innings while keeping fixtures"
+                >
+                  <RefreshCw className="h-3.5 w-3.5" />
+                  <span>Reset Completed & Live Matches</span>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => {
                     const pendingCount = matches.filter((m) => m.status === "UPCOMING" || m.status === "READY").length;
                     if (pendingCount === 0) {
                       setScheduleActionError(null);
@@ -1784,6 +1867,25 @@ function AdminPortalPage() {
                               </div>
                             )}
                           </div>
+
+                          {/* Reset Single Match Data Button (Live / Completed test matches) */}
+                          {(m.status === "LIVE" || m.status === "COMPLETED") && (
+                            <div className="mt-1 pt-2 border-t border-[#F3F4F6]">
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  setScheduleActionError(null);
+                                  setMatchToResetSingle(m);
+                                }}
+                                disabled={isScheduleActionLoading}
+                                className="w-full tap py-2 rounded-lg bg-red-50 hover:bg-red-100 border border-red-300 text-red-700 font-black text-[10px] uppercase tracking-wider text-center transition-colors flex items-center justify-center gap-1.5"
+                                title="Reset deliveries, innings, and scores for this match back to scheduled state"
+                              >
+                                <RotateCcw className="h-3 w-3 text-red-600" />
+                                <span>RESET MATCH DATA (TESTING)</span>
+                              </button>
+                            </div>
+                          )}
                         </div>
 
 
@@ -2942,6 +3044,176 @@ function AdminPortalPage() {
                   </>
                 ) : (
                   <span>Reset Pending</span>
+                )}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ── RESET COMPLETED & LIVE MATCHES CONFIRMATION MODAL ─────────────── */}
+      {showResetActiveModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
+          <div className="w-full max-w-md bg-white border border-amber-300 rounded-3xl p-6 flex flex-col gap-5 shadow-2xl">
+            <div className="flex items-center gap-3 text-amber-700">
+              <RefreshCw className="h-6 w-6 shrink-0 text-amber-600" />
+              <h3 className="text-base font-black uppercase text-[#111827]">Reset Completed & Live Matches?</h3>
+            </div>
+            
+            <div className="flex flex-col gap-2.5 text-xs text-[#4B5563] leading-relaxed">
+              <p>
+                All <strong>LIVE and COMPLETED match data</strong> (ball-by-ball deliveries, innings records, toss selections, and match outcomes) will be reset back to <strong>UPCOMING</strong>.
+              </p>
+              <div className="p-3 bg-amber-50 rounded-xl border border-amber-200 text-amber-900 font-bold flex flex-col gap-1">
+                <span>✓ Match schedule and fixtures are preserved.</span>
+                <span>✓ Perfect for restarting tournament testing from scratch.</span>
+              </div>
+            </div>
+
+            {scheduleActionError && (
+              <div className="p-3 bg-red-50 border border-red-200 rounded-xl text-red-700 text-xs font-bold">
+                {scheduleActionError}
+              </div>
+            )}
+            
+            <div className="grid grid-cols-2 gap-3 pt-2">
+              <button
+                onClick={() => {
+                  setScheduleActionError(null);
+                  setShowResetActiveModal(false);
+                }}
+                disabled={isScheduleActionLoading}
+                className="py-3 rounded-xl bg-[#F3F4F6] hover:bg-[#E5E7EB] disabled:opacity-50 text-[#111827] font-bold text-xs uppercase transition-colors min-h-[48px]"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleResetCompletedAndLiveMatches}
+                disabled={isScheduleActionLoading}
+                className="py-3 rounded-xl bg-amber-600 hover:bg-amber-500 disabled:opacity-50 text-white font-black text-xs uppercase shadow-md transition-colors flex items-center justify-center gap-2 min-h-[48px]"
+              >
+                {isScheduleActionLoading ? (
+                  <>
+                    <RefreshCw className="h-3.5 w-3.5 animate-spin" />
+                    <span>Resetting...</span>
+                  </>
+                ) : (
+                  <span>Reset Matches</span>
+                )}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ── RESET ALL TOURNAMENT MATCHES MODAL ────────────────────────────── */}
+      {showResetAllModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
+          <div className="w-full max-w-md bg-white border border-red-300 rounded-3xl p-6 flex flex-col gap-5 shadow-2xl">
+            <div className="flex items-center gap-3 text-red-600">
+              <Trash2 className="h-6 w-6 shrink-0" />
+              <h3 className="text-base font-black uppercase text-[#111827]">Reset All Matches for Fresh Testing?</h3>
+            </div>
+            
+            <div className="flex flex-col gap-2.5 text-xs text-[#4B5563] leading-relaxed">
+              <p>
+                This will reset <strong>EVERY match in the tournament</strong> (all scheduled, live, and completed matches) back to fresh UPCOMING status with zeroed scores and cleared ball deliveries.
+              </p>
+              <p className="p-3 bg-red-50 rounded-xl border border-red-200 text-red-700 font-bold">
+                ⚠️ All live deliveries, innings, toss results, and player match statistics will be permanently wiped for fresh testing.
+              </p>
+            </div>
+
+            {scheduleActionError && (
+              <div className="p-3 bg-red-50 border border-red-200 rounded-xl text-red-700 text-xs font-bold">
+                {scheduleActionError}
+              </div>
+            )}
+            
+            <div className="grid grid-cols-2 gap-3 pt-2">
+              <button
+                onClick={() => {
+                  setScheduleActionError(null);
+                  setShowResetAllModal(false);
+                }}
+                disabled={isScheduleActionLoading}
+                className="py-3 rounded-xl bg-[#F3F4F6] hover:bg-[#E5E7EB] disabled:opacity-50 text-[#111827] font-bold text-xs uppercase transition-colors min-h-[48px]"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleResetAllMatches}
+                disabled={isScheduleActionLoading}
+                className="py-3 rounded-xl bg-red-600 hover:bg-red-500 disabled:opacity-50 text-white font-black text-xs uppercase shadow-md transition-colors flex items-center justify-center gap-2 min-h-[48px]"
+              >
+                {isScheduleActionLoading ? (
+                  <>
+                    <RefreshCw className="h-3.5 w-3.5 animate-spin" />
+                    <span>Resetting All...</span>
+                  </>
+                ) : (
+                  <span>Reset All</span>
+                )}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ── RESET SINGLE MATCH MODAL ──────────────────────────────────────── */}
+      {matchToResetSingle && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
+          <div className="w-full max-w-md bg-white border border-red-300 rounded-3xl p-6 flex flex-col gap-5 shadow-2xl">
+            <div className="flex items-center gap-3 text-red-600">
+              <RotateCcw className="h-6 w-6 shrink-0" />
+              <div>
+                <h3 className="text-base font-black uppercase text-[#111827]">
+                  Reset Match #{String(matchToResetSingle.matchNumber).padStart(2, "0")}?
+                </h3>
+                <p className="text-[11px] text-[#6B7280] font-bold">
+                  {lookup.team(matchToResetSingle.teamAId)?.name || "Team A"} vs {lookup.team(matchToResetSingle.teamBId)?.name || "Team B"}
+                </p>
+              </div>
+            </div>
+            
+            <div className="flex flex-col gap-2.5 text-xs text-[#4B5563] leading-relaxed">
+              <p>
+                Are you sure you want to reset this match? All ball-by-ball deliveries, innings records, toss selections, and live/completed scores for <strong>Match #{matchToResetSingle.matchNumber}</strong> will be wiped.
+              </p>
+              <p className="p-3 bg-amber-50 rounded-xl border border-amber-200 text-amber-900 font-bold">
+                ✓ The match will return to scheduled UPCOMING state with its original fixture date and time preserved.
+              </p>
+            </div>
+
+            {scheduleActionError && (
+              <div className="p-3 bg-red-50 border border-red-200 rounded-xl text-red-700 text-xs font-bold">
+                {scheduleActionError}
+              </div>
+            )}
+            
+            <div className="grid grid-cols-2 gap-3 pt-2">
+              <button
+                onClick={() => {
+                  setScheduleActionError(null);
+                  setMatchToResetSingle(null);
+                }}
+                disabled={isScheduleActionLoading}
+                className="py-3 rounded-xl bg-[#F3F4F6] hover:bg-[#E5E7EB] disabled:opacity-50 text-[#111827] font-bold text-xs uppercase transition-colors min-h-[48px]"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleResetSingleMatchSubmit}
+                disabled={isScheduleActionLoading}
+                className="py-3 rounded-xl bg-red-600 hover:bg-red-500 disabled:opacity-50 text-white font-black text-xs uppercase shadow-md transition-colors flex items-center justify-center gap-2 min-h-[48px]"
+              >
+                {isScheduleActionLoading ? (
+                  <>
+                    <RefreshCw className="h-3.5 w-3.5 animate-spin" />
+                    <span>Resetting Match...</span>
+                  </>
+                ) : (
+                  <span>Confirm Reset</span>
                 )}
               </button>
             </div>

@@ -13,6 +13,8 @@ import {
   saveScheduleServerFn,
   resetScheduleServerFn,
   resetAllTournamentMatchesServerFn,
+  resetCompletedAndLiveMatchesServerFn,
+  resetSingleMatchServerFn,
   generateTournamentScheduleServerFn,
   type GenerateScheduleInput,
   createMatchServerFn,
@@ -595,6 +597,8 @@ export interface MatchRepository {
   resetSchedule(): Promise<Match[]>;
   resetAllMatches(): Promise<Match[]>;
   resetPendingFixtures(): Promise<Match[]>;
+  resetCompletedAndLiveMatches(): Promise<Match[]>;
+  resetSingleMatch(matchId: string): Promise<Match[]>;
   generateTournamentSchedule(input: GenerateScheduleInput): Promise<Match[]>;
   createMatch(match: Match): Promise<Match>;
   createSingleMatch(input: {
@@ -1039,6 +1043,108 @@ export class SupabaseMatchRepository implements MatchRepository {
       console.error("[SupabaseMatchRepository] resetPendingFixtures server error:", err?.message);
       const cleanMsg = (err?.message || "Server error").replace(/^(Failed to reset upcoming fixtures:\s*)+/i, "").trim();
       throw new Error(`Failed to reset pending fixtures: ${cleanMsg}`);
+    }
+  }
+
+  async resetCompletedAndLiveMatches(): Promise<Match[]> {
+    try {
+      if (isSupabaseConfigured) {
+        try {
+          await resetCompletedAndLiveMatchesServerFn();
+        } catch (serverErr) {
+          console.warn("[SupabaseMatchRepository] resetCompletedAndLiveMatchesServerFn warning:", serverErr);
+        }
+      }
+
+      const allCurrent = lookup.matches();
+      const updatedMatches: Match[] = allCurrent.map((m) => {
+        if (m.status === "LIVE" || m.status === "COMPLETED") {
+          return {
+            ...m,
+            status: "UPCOMING",
+            tossWinnerId: undefined,
+            tossDecision: undefined,
+            manOfTheMatchId: undefined,
+            setup: undefined,
+            scorecard: undefined,
+            resultText: undefined,
+          };
+        }
+        return m;
+      });
+
+      if (typeof window !== "undefined") {
+        try {
+          allCurrent
+            .filter((m) => m.status === "LIVE" || m.status === "COMPLETED")
+            .forEach((m) => {
+              window.localStorage.removeItem("tpl-scoring:" + m.id);
+              window.localStorage.removeItem("tpl-live-match:" + m.id);
+              window.localStorage.removeItem("tpl-match-state:" + m.id);
+              window.localStorage.removeItem("tpl_match_live_" + m.id);
+              window.localStorage.removeItem("tpl_match_completed_" + m.id);
+              try {
+                window.sessionStorage.removeItem("tpl_scorer_match_pin_" + m.id);
+              } catch {}
+            });
+          window.localStorage.removeItem("tpl-obs-active-match");
+          window.localStorage.removeItem("tpl_active_scorer_match");
+        } catch {}
+      }
+
+      lookup.setMatches(updatedMatches);
+      return updatedMatches;
+    } catch (err: any) {
+      console.error("[SupabaseMatchRepository] resetCompletedAndLiveMatches error:", err?.message);
+      throw new Error(`Failed to reset completed and live matches: ${err?.message || "Storage error"}`);
+    }
+  }
+
+  async resetSingleMatch(matchId: string): Promise<Match[]> {
+    try {
+      if (isSupabaseConfigured) {
+        try {
+          await resetSingleMatchServerFn({ data: { matchId } });
+        } catch (serverErr) {
+          console.warn("[SupabaseMatchRepository] resetSingleMatchServerFn warning:", serverErr);
+        }
+      }
+
+      const allCurrent = lookup.matches();
+      const updatedMatches: Match[] = allCurrent.map((m) => {
+        if (m.id === matchId) {
+          return {
+            ...m,
+            status: "UPCOMING",
+            tossWinnerId: undefined,
+            tossDecision: undefined,
+            manOfTheMatchId: undefined,
+            setup: undefined,
+            scorecard: undefined,
+            resultText: undefined,
+          };
+        }
+        return m;
+      });
+
+      if (typeof window !== "undefined") {
+        try {
+          window.localStorage.removeItem("tpl-scoring:" + matchId);
+          window.localStorage.removeItem("tpl-live-match:" + matchId);
+          window.localStorage.removeItem("tpl-match-state:" + matchId);
+          window.localStorage.removeItem("tpl_match_live_" + matchId);
+          window.localStorage.removeItem("tpl_match_completed_" + matchId);
+          try {
+            window.sessionStorage.removeItem("tpl_scorer_match_pin_" + matchId);
+          } catch {}
+        } catch {}
+      }
+
+      lookup.setMatches(updatedMatches);
+      return updatedMatches;
+    } catch (err: any) {
+      console.error("[SupabaseMatchRepository] resetSingleMatch error:", err?.message);
+      throw new Error(`Failed to reset match: ${err?.message || "Storage error"}`);
     }
   }
 
