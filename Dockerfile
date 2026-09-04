@@ -7,7 +7,7 @@ WORKDIR /app
 COPY package*.json ./
 
 # Install dependencies including linux native bindings
-RUN npm install
+RUN npm install --include=optional
 
 # Copy source code
 COPY . .
