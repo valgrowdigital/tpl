@@ -6,3 +6,7 @@ dist
 scratch
 npm-debug.log*
 .DS_Store
+*.webm
+*.png
+*.pdf
+
