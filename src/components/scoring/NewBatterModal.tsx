@@ -164,7 +164,7 @@ export function NewBatterModal({
                       {player?.name ?? id}
                     </p>
                     <p className="text-[11px] font-bold text-[#5F6368]">
-                      {player?.role ?? "Batsman"}
+                      {player?.role && player.role !== "Unspecified" ? player.role : "Player"}
                       {player?.battingStyle ? ` · ${player.battingStyle}` : ""}
                     </p>
                   </div>

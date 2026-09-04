@@ -112,7 +112,9 @@ export function BowlerModal({
                     {player?.name ?? id}
                   </p>
                   <div className="flex items-center gap-2 text-[10px] text-muted-foreground flex-wrap">
-                    <span>{player?.role}</span>
+                    {player?.role && player.role !== "Unspecified" && (
+                      <span>{player.role}</span>
+                    )}
                     {isLocked && eligibility.reason && (
                       <span className="text-red-500 font-bold">
                         · {eligibility.reason}

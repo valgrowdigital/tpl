@@ -53,7 +53,7 @@ export function BowlerPanel({ bowlerId, bowlers, innings, canChangeBowler, onCha
           </div>
           <div className="min-w-0 flex-1">
             <p className="truncate text-sm font-black text-[#111111]">{player.shortName}</p>
-            <p className="text-[11px] font-bold text-[#5F6368]">{player.role}</p>
+            <p className="text-[11px] font-bold text-[#5F6368]">{player.role && player.role !== "Unspecified" ? player.role : "Bowler"}</p>
           </div>
           {stat && (
             <div className="flex items-center gap-3 sm:gap-4 shrink-0 text-right">

@@ -69,7 +69,7 @@ export const SEED_PLAYERS: Player[] = [
     "name": "Aathif Adil",
     "shortName": "A. Adil",
     "teamId": "9d930c5d-c96b-43ef-8be7-fed8c71133df",
-    "role": "All-rounder",
+    "role": "Unspecified",
     "avatar": "https://emlhfbbkwdpmdodjruje.supabase.co/storage/v1/object/public/player_avatars/aathif-adil-53rl-1787075758966.webp",
     "slug": "aathif-adil-53rl"
   },
@@ -78,7 +78,7 @@ export const SEED_PLAYERS: Player[] = [
     "name": "AB Mohamed",
     "shortName": "A. Mohamed",
     "teamId": "53a3ea75-b3cf-4908-a19b-d3f3b693b3fd",
-    "role": "Bowler",
+    "role": "Unspecified",
     "avatar": "https://emlhfbbkwdpmdodjruje.supabase.co/storage/v1/object/public/player_avatars/ab-mohamed-my8q-1786962703922.webp",
     "slug": "ab-mohamed-my8q"
   },
@@ -87,7 +87,7 @@ export const SEED_PLAYERS: Player[] = [
     "name": "Abdul Razzaq",
     "shortName": "A. Razzaq",
     "teamId": "9d930c5d-c96b-43ef-8be7-fed8c71133df",
-    "role": "Batter",
+    "role": "Unspecified",
     "avatar": "https://emlhfbbkwdpmdodjruje.supabase.co/storage/v1/object/public/player_avatars/abdul-razzaq-km9j-1786778921457.webp",
     "slug": "abdul-razzaq-km9j"
   },
@@ -96,7 +96,7 @@ export const SEED_PLAYERS: Player[] = [
     "name": "Ahamed Asaar",
     "shortName": "A. Asaar",
     "teamId": "53a3ea75-b3cf-4908-a19b-d3f3b693b3fd",
-    "role": "All-rounder",
+    "role": "Unspecified",
     "avatar": "https://emlhfbbkwdpmdodjruje.supabase.co/storage/v1/object/public/player_avatars/ahamed-asaar-csdf-1786815025842.webp",
     "slug": "ahamed-asaar-csdf"
   },
@@ -105,7 +105,7 @@ export const SEED_PLAYERS: Player[] = [
     "name": "Ahamed Fais Ahamed Fasran",
     "shortName": "A. Fasran",
     "teamId": "edcc603d-db13-4191-813c-44abb06c883c",
-    "role": "Bowler",
+    "role": "Unspecified",
     "avatar": "https://emlhfbbkwdpmdodjruje.supabase.co/storage/v1/object/public/player_avatars/ahamed-fais-ahamed-fasran-8y9f-1786949302357.webp",
     "slug": "ahamed-fais-ahamed-fasran-8y9f"
   },
@@ -113,7 +113,7 @@ export const SEED_PLAYERS: Player[] = [
     "id": "dfc470ba-4e6f-4e57-88a5-13e30dc83ea1",
     "name": "Ahamed Milfar",
     "shortName": "A. Milfar",
-    "role": "All-rounder",
+    "role": "Unspecified",
     "avatar": "https://emlhfbbkwdpmdodjruje.supabase.co/storage/v1/object/public/player_avatars/ahamed-milfar-t6p9-1786864698510.webp",
     "slug": "ahamed-milfar-t6p9"
   },
@@ -122,7 +122,7 @@ export const SEED_PLAYERS: Player[] = [
     "name": "Ajmal",
     "shortName": "Ajmal",
     "teamId": "53a3ea75-b3cf-4908-a19b-d3f3b693b3fd",
-    "role": "Wicketkeeper",
+    "role": "Unspecified",
     "avatar": "https://emlhfbbkwdpmdodjruje.supabase.co/storage/v1/object/public/player_avatars/ajmal-pei2-1787047077853.webp",
     "slug": "ajmal-pei2"
   },
@@ -131,7 +131,7 @@ export const SEED_PLAYERS: Player[] = [
     "name": "Amjad Aswer",
     "shortName": "A. Aswer",
     "teamId": "9d930c5d-c96b-43ef-8be7-fed8c71133df",
-    "role": "Bowler",
+    "role": "Unspecified",
     "avatar": "https://emlhfbbkwdpmdodjruje.supabase.co/storage/v1/object/public/player_avatars/amjad-aswer-9s21-1787454440696.jpg",
     "slug": "amjad-aswer-9s21"
   },
@@ -140,7 +140,7 @@ export const SEED_PLAYERS: Player[] = [
     "name": "ASHFAK",
     "shortName": "ASHFAK",
     "teamId": "c1397164-6f86-4639-93e6-888e0091bb51",
-    "role": "All-rounder",
+    "role": "Unspecified",
     "avatar": "https://emlhfbbkwdpmdodjruje.supabase.co/storage/v1/object/public/player_avatars/ashfak-c0i4-1786853888773.webp",
     "slug": "ashfak-c0i4"
   },
@@ -149,7 +149,7 @@ export const SEED_PLAYERS: Player[] = [
     "name": "FAM Raseen",
     "shortName": "F. Raseen",
     "teamId": "c1397164-6f86-4639-93e6-888e0091bb51",
-    "role": "Bowler",
+    "role": "Unspecified",
     "avatar": "https://emlhfbbkwdpmdodjruje.supabase.co/storage/v1/object/public/player_avatars/fam-raseen-bgqi-1787076199798.webp",
     "slug": "fam-raseen-bgqi"
   },
@@ -158,7 +158,7 @@ export const SEED_PLAYERS: Player[] = [
     "name": "Farhath Fairoos",
     "shortName": "F. Fairoos",
     "teamId": "f36ace20-1b45-43e4-be94-7a0f8a678fd9",
-    "role": "Batter",
+    "role": "Unspecified",
     "avatar": "https://emlhfbbkwdpmdodjruje.supabase.co/storage/v1/object/public/player_avatars/farhath-fairoos-e5bw-1786886242179.webp",
     "slug": "farhath-fairoos-e5bw"
   },
@@ -167,7 +167,7 @@ export const SEED_PLAYERS: Player[] = [
     "name": "Fayas",
     "shortName": "Fayas",
     "teamId": "9d930c5d-c96b-43ef-8be7-fed8c71133df",
-    "role": "All-rounder",
+    "role": "Unspecified",
     "avatar": "https://emlhfbbkwdpmdodjruje.supabase.co/storage/v1/object/public/player_avatars/fayas-rwbh-1786800556353.webp",
     "slug": "fayas-rwbh"
   },
@@ -176,7 +176,7 @@ export const SEED_PLAYERS: Player[] = [
     "name": "Fazlur Rahman",
     "shortName": "F. Rahman",
     "teamId": "832b3866-046c-4beb-970a-4d79cc72ba37",
-    "role": "Bowler",
+    "role": "Unspecified",
     "avatar": "https://emlhfbbkwdpmdodjruje.supabase.co/storage/v1/object/public/player_avatars/fazlur-rahman-c9vi-1786780773828.webp",
     "slug": "fazlur-rahman-c9vi"
   },
@@ -185,7 +185,7 @@ export const SEED_PLAYERS: Player[] = [
     "name": "Hakeem Muhammadh",
     "shortName": "H. Muhammadh",
     "teamId": "9d930c5d-c96b-43ef-8be7-fed8c71133df",
-    "role": "Wicketkeeper",
+    "role": "Unspecified",
     "avatar": "https://emlhfbbkwdpmdodjruje.supabase.co/storage/v1/object/public/player_avatars/hakeem-muhammadh-0u9k-1786899977254.webp",
     "slug": "hakeem-muhammadh-0u9k"
   },
@@ -194,7 +194,7 @@ export const SEED_PLAYERS: Player[] = [
     "name": "Hassan",
     "shortName": "Hassan",
     "teamId": "832b3866-046c-4beb-970a-4d79cc72ba37",
-    "role": "Batter",
+    "role": "Unspecified",
     "avatar": "https://emlhfbbkwdpmdodjruje.supabase.co/storage/v1/object/public/player_avatars/hassan-qlh8-1786893930367.webp",
     "slug": "hassan-qlh8"
   },
@@ -203,7 +203,7 @@ export const SEED_PLAYERS: Player[] = [
     "name": "Husain Risvi",
     "shortName": "H. Risvi",
     "teamId": "53a3ea75-b3cf-4908-a19b-d3f3b693b3fd",
-    "role": "All-rounder",
+    "role": "Unspecified",
     "avatar": "https://emlhfbbkwdpmdodjruje.supabase.co/storage/v1/object/public/player_avatars/husain-risvi-3d8d-1786809580921.webp",
     "slug": "husain-risvi-3d8d"
   },
@@ -212,7 +212,7 @@ export const SEED_PLAYERS: Player[] = [
     "name": "Ilhan mim",
     "shortName": "I. mim",
     "teamId": "53a3ea75-b3cf-4908-a19b-d3f3b693b3fd",
-    "role": "Bowler",
+    "role": "Unspecified",
     "avatar": "https://emlhfbbkwdpmdodjruje.supabase.co/storage/v1/object/public/player_avatars/ilhan-mim-xohv-1786861317931.webp",
     "slug": "ilhan-mim-xohv"
   },
@@ -221,7 +221,7 @@ export const SEED_PLAYERS: Player[] = [
     "name": "M I MOHAMED INFAS",
     "shortName": "M. INFAS",
     "teamId": "c1397164-6f86-4639-93e6-888e0091bb51",
-    "role": "Batter",
+    "role": "Unspecified",
     "avatar": "https://emlhfbbkwdpmdodjruje.supabase.co/storage/v1/object/public/player_avatars/m-i-mohamed-infas-qpp3-1786945307475.webp",
     "slug": "m-i-mohamed-infas-qpp3"
   },
@@ -229,7 +229,7 @@ export const SEED_PLAYERS: Player[] = [
     "id": "64923b43-283c-404c-a413-42411877a63b",
     "name": "M M ismail",
     "shortName": "M. ismail",
-    "role": "Bowler",
+    "role": "Unspecified",
     "avatar": "https://emlhfbbkwdpmdodjruje.supabase.co/storage/v1/object/public/player_avatars/m-m-ismail-o7w9-1786886221804.webp",
     "slug": "m-m-ismail-o7w9"
   },
@@ -237,7 +237,7 @@ export const SEED_PLAYERS: Player[] = [
     "id": "23b49436-a3d0-4807-83e4-040a1c18359a",
     "name": "M. H. M Hassan",
     "shortName": "M. Hassan",
-    "role": "All-rounder",
+    "role": "Unspecified",
     "avatar": "https://emlhfbbkwdpmdodjruje.supabase.co/storage/v1/object/public/player_avatars/m-h-m-hassan-krbw-1786892296545.webp",
     "slug": "m-h-m-hassan-krbw"
   },
@@ -245,7 +245,7 @@ export const SEED_PLAYERS: Player[] = [
     "id": "d253b760-e86b-42fc-98c1-119b3f26654a",
     "name": "M. I. M. Ilham",
     "shortName": "M. Ilham",
-    "role": "Batter",
+    "role": "Unspecified",
     "avatar": "https://emlhfbbkwdpmdodjruje.supabase.co/storage/v1/object/public/player_avatars/m-i-m-ilham-mhsd-1786892552170.webp",
     "slug": "m-i-m-ilham-mhsd"
   },
@@ -254,7 +254,7 @@ export const SEED_PLAYERS: Player[] = [
     "name": "M. J. M Sifar",
     "shortName": "M. Sifar",
     "teamId": "edcc603d-db13-4191-813c-44abb06c883c",
-    "role": "All-rounder",
+    "role": "Unspecified",
     "avatar": "https://emlhfbbkwdpmdodjruje.supabase.co/storage/v1/object/public/player_avatars/m-j-m-sifar-4yq4-1786891582230.webp",
     "slug": "m-j-m-sifar-4yq4"
   },
@@ -263,7 +263,7 @@ export const SEED_PLAYERS: Player[] = [
     "name": "M. M. M Imran",
     "shortName": "M. Imran",
     "teamId": "9d930c5d-c96b-43ef-8be7-fed8c71133df",
-    "role": "Bowler",
+    "role": "Unspecified",
     "avatar": "https://emlhfbbkwdpmdodjruje.supabase.co/storage/v1/object/public/player_avatars/m-m-m-imran-dp7p-1786873659656.webp",
     "slug": "m-m-m-imran-dp7p"
   },
@@ -272,7 +272,7 @@ export const SEED_PLAYERS: Player[] = [
     "name": "M. Mushab",
     "shortName": "M. Mushab",
     "teamId": "53a3ea75-b3cf-4908-a19b-d3f3b693b3fd",
-    "role": "Batter",
+    "role": "Unspecified",
     "avatar": "https://emlhfbbkwdpmdodjruje.supabase.co/storage/v1/object/public/player_avatars/m-mushab-kr4i-1786873586825.webp",
     "slug": "m-mushab-kr4i"
   },
@@ -281,7 +281,7 @@ export const SEED_PLAYERS: Player[] = [
     "name": "M.A.M Aashif",
     "shortName": "M. Aashif",
     "teamId": "edcc603d-db13-4191-813c-44abb06c883c",
-    "role": "Batter",
+    "role": "Unspecified",
     "avatar": "https://emlhfbbkwdpmdodjruje.supabase.co/storage/v1/object/public/player_avatars/m-a-m-aashif-es9a-1786978463920.webp",
     "slug": "m-a-m-aashif-es9a"
   },
@@ -290,7 +290,7 @@ export const SEED_PLAYERS: Player[] = [
     "name": "M.IMTHIYAS",
     "shortName": "M.IMTHIYAS",
     "teamId": "53a3ea75-b3cf-4908-a19b-d3f3b693b3fd",
-    "role": "All-rounder",
+    "role": "Unspecified",
     "avatar": "https://emlhfbbkwdpmdodjruje.supabase.co/storage/v1/object/public/player_avatars/m-imthiyas-dxrw-1786782010937.webp",
     "slug": "m-imthiyas-dxrw"
   },
@@ -298,7 +298,7 @@ export const SEED_PLAYERS: Player[] = [
     "id": "16665ada-932c-4c02-8988-06af9e323b2d",
     "name": "M.J.M HILMY",
     "shortName": "M. HILMY",
-    "role": "Wicketkeeper",
+    "role": "Unspecified",
     "avatar": "https://emlhfbbkwdpmdodjruje.supabase.co/storage/v1/object/public/player_avatars/m-j-m-hilmy-ordu-1787060018065.webp",
     "slug": "m-j-m-hilmy-ordu"
   },
@@ -307,7 +307,7 @@ export const SEED_PLAYERS: Player[] = [
     "name": "M.M.M FASLAN",
     "shortName": "M. FASLAN",
     "teamId": "c1397164-6f86-4639-93e6-888e0091bb51",
-    "role": "Bowler",
+    "role": "Unspecified",
     "avatar": "https://emlhfbbkwdpmdodjruje.supabase.co/storage/v1/object/public/player_avatars/m-m-m-faslan-svfu-1786864715787.webp",
     "slug": "m-m-m-faslan-svfu"
   },
@@ -316,7 +316,7 @@ export const SEED_PLAYERS: Player[] = [
     "name": "M.Marlin",
     "shortName": "M.Marlin",
     "teamId": "832b3866-046c-4beb-970a-4d79cc72ba37",
-    "role": "All-rounder",
+    "role": "Unspecified",
     "avatar": "https://emlhfbbkwdpmdodjruje.supabase.co/storage/v1/object/public/player_avatars/m-marlin-7jtb-1786986834224.jpg",
     "slug": "m-marlin-7jtb"
   },
@@ -325,7 +325,7 @@ export const SEED_PLAYERS: Player[] = [
     "name": "M.S.M.MARJAN",
     "shortName": "M.S.M.MARJAN",
     "teamId": "53a3ea75-b3cf-4908-a19b-d3f3b693b3fd",
-    "role": "Bowler",
+    "role": "Unspecified",
     "avatar": "https://emlhfbbkwdpmdodjruje.supabase.co/storage/v1/object/public/player_avatars/m-s-m-marjan-u23y-1786786009463.webp",
     "slug": "m-s-m-marjan-u23y"
   },
@@ -334,7 +334,7 @@ export const SEED_PLAYERS: Player[] = [
     "name": "Mahmoodh Munawwer",
     "shortName": "M. Munawwer",
     "teamId": "f36ace20-1b45-43e4-be94-7a0f8a678fd9",
-    "role": "All-rounder",
+    "role": "Unspecified",
     "avatar": "https://emlhfbbkwdpmdodjruje.supabase.co/storage/v1/object/public/player_avatars/mahmoodh-munawwer-wqhm-1786783140240.webp",
     "slug": "mahmoodh-munawwer-wqhm"
   },
@@ -342,7 +342,7 @@ export const SEED_PLAYERS: Player[] = [
     "id": "84ad2c4e-a499-4f2e-a814-53298ac18ae7",
     "name": "MF SHIHAN",
     "shortName": "M. SHIHAN",
-    "role": "Batter",
+    "role": "Unspecified",
     "avatar": "https://emlhfbbkwdpmdodjruje.supabase.co/storage/v1/object/public/player_avatars/mf-shihan-qc1n-1786877158754.webp",
     "slug": "mf-shihan-qc1n"
   },
@@ -351,7 +351,7 @@ export const SEED_PLAYERS: Player[] = [
     "name": "Mfm fazal",
     "shortName": "M. fazal",
     "teamId": "53a3ea75-b3cf-4908-a19b-d3f3b693b3fd",
-    "role": "Batter",
+    "role": "Unspecified",
     "avatar": "https://emlhfbbkwdpmdodjruje.supabase.co/storage/v1/object/public/player_avatars/mfm-fazal-vpop-1786785004297.webp",
     "slug": "mfm-fazal-vpop"
   },
@@ -360,7 +360,7 @@ export const SEED_PLAYERS: Player[] = [
     "name": "MIM ILHAM",
     "shortName": "M. ILHAM",
     "teamId": "9d930c5d-c96b-43ef-8be7-fed8c71133df",
-    "role": "All-rounder",
+    "role": "Unspecified",
     "avatar": "https://emlhfbbkwdpmdodjruje.supabase.co/storage/v1/object/public/player_avatars/mim-ilham-wm0a-1786991631248.webp",
     "slug": "mim-ilham-wm0a"
   },
@@ -369,7 +369,7 @@ export const SEED_PLAYERS: Player[] = [
     "name": "Mjm Sahran",
     "shortName": "M. Sahran",
     "teamId": "f36ace20-1b45-43e4-be94-7a0f8a678fd9",
-    "role": "Bowler",
+    "role": "Unspecified",
     "avatar": "https://emlhfbbkwdpmdodjruje.supabase.co/storage/v1/object/public/player_avatars/mjm-sahran-1phw-1787023934872.webp",
     "slug": "mjm-sahran-1phw"
   },
@@ -378,7 +378,7 @@ export const SEED_PLAYERS: Player[] = [
     "name": "MMM Rizan",
     "shortName": "M. Rizan",
     "teamId": "f36ace20-1b45-43e4-be94-7a0f8a678fd9",
-    "role": "Wicketkeeper",
+    "role": "Unspecified",
     "avatar": "https://emlhfbbkwdpmdodjruje.supabase.co/storage/v1/object/public/player_avatars/mmm-rizan-2tj9-1787075833314.webp",
     "slug": "mmm-rizan-2tj9"
   },
@@ -387,7 +387,7 @@ export const SEED_PLAYERS: Player[] = [
     "name": "Mohamad Nashan",
     "shortName": "M. Nashan",
     "teamId": "9d930c5d-c96b-43ef-8be7-fed8c71133df",
-    "role": "Batter",
+    "role": "Unspecified",
     "avatar": "https://emlhfbbkwdpmdodjruje.supabase.co/storage/v1/object/public/player_avatars/mohamad-nashan-ctra-1786990952829.webp",
     "slug": "mohamad-nashan-ctra"
   },
@@ -396,7 +396,7 @@ export const SEED_PLAYERS: Player[] = [
     "name": "Mohamed Abrar",
     "shortName": "M. Abrar",
     "teamId": "f36ace20-1b45-43e4-be94-7a0f8a678fd9",
-    "role": "All-rounder",
+    "role": "Unspecified",
     "avatar": "https://emlhfbbkwdpmdodjruje.supabase.co/storage/v1/object/public/player_avatars/mohamed-abrar-hob1-1786802685193.webp",
     "slug": "mohamed-abrar-hob1"
   },
@@ -405,7 +405,7 @@ export const SEED_PLAYERS: Player[] = [
     "name": "MOHAMED AKMAL",
     "shortName": "M. AKMAL",
     "teamId": "c1397164-6f86-4639-93e6-888e0091bb51",
-    "role": "Wicketkeeper",
+    "role": "Unspecified",
     "avatar": "https://emlhfbbkwdpmdodjruje.supabase.co/storage/v1/object/public/player_avatars/mohamed-akmal-b2hw-1787130548670.webp",
     "slug": "mohamed-akmal-b2hw"
   },
@@ -413,7 +413,7 @@ export const SEED_PLAYERS: Player[] = [
     "id": "02e32400-f7bb-4bce-9cee-35e28bbcf9f4",
     "name": "Mohamed Arif",
     "shortName": "M. Arif",
-    "role": "Bowler",
+    "role": "Unspecified",
     "avatar": "https://emlhfbbkwdpmdodjruje.supabase.co/storage/v1/object/public/player_avatars/mohamed-arif-iirc-1786811190186.webp",
     "slug": "mohamed-arif-iirc"
   },
@@ -422,7 +422,7 @@ export const SEED_PLAYERS: Player[] = [
     "name": "MOHAMED ASARDEEN",
     "shortName": "M. ASARDEEN",
     "teamId": "f36ace20-1b45-43e4-be94-7a0f8a678fd9",
-    "role": "Bowler",
+    "role": "Unspecified",
     "avatar": "https://emlhfbbkwdpmdodjruje.supabase.co/storage/v1/object/public/player_avatars/mohamed-asardeen-t947-1786803281615.webp",
     "slug": "mohamed-asardeen-t947"
   },
@@ -431,7 +431,7 @@ export const SEED_PLAYERS: Player[] = [
     "name": "Mohamed faaris",
     "shortName": "M. faaris",
     "teamId": "edcc603d-db13-4191-813c-44abb06c883c",
-    "role": "All-rounder",
+    "role": "Unspecified",
     "avatar": "https://emlhfbbkwdpmdodjruje.supabase.co/storage/v1/object/public/player_avatars/mohamed-faaris-iqtx-1786803853750.webp",
     "slug": "mohamed-faaris-iqtx"
   },
@@ -440,7 +440,7 @@ export const SEED_PLAYERS: Player[] = [
     "name": "Mohamed Farsan",
     "shortName": "M. Farsan",
     "teamId": "edcc603d-db13-4191-813c-44abb06c883c",
-    "role": "Bowler",
+    "role": "Unspecified",
     "avatar": "https://emlhfbbkwdpmdodjruje.supabase.co/storage/v1/object/public/player_avatars/mohamed-farsan-1fs8-1787047781626.webp",
     "slug": "mohamed-farsan-1fs8"
   },
@@ -449,7 +449,7 @@ export const SEED_PLAYERS: Player[] = [
     "name": "Mohamed Farzan",
     "shortName": "M. Farzan",
     "teamId": "53a3ea75-b3cf-4908-a19b-d3f3b693b3fd",
-    "role": "Batter",
+    "role": "Unspecified",
     "avatar": "https://emlhfbbkwdpmdodjruje.supabase.co/storage/v1/object/public/player_avatars/mohamed-farzan-c544-1786781925659.webp",
     "slug": "mohamed-farzan-c544"
   },
@@ -458,7 +458,7 @@ export const SEED_PLAYERS: Player[] = [
     "name": "Mohamed Fasan",
     "shortName": "M. Fasan",
     "teamId": "c1397164-6f86-4639-93e6-888e0091bb51",
-    "role": "All-rounder",
+    "role": "Unspecified",
     "avatar": "https://emlhfbbkwdpmdodjruje.supabase.co/storage/v1/object/public/player_avatars/mohamed-fasan-da9x-1786894952070.webp",
     "slug": "mohamed-fasan-da9x"
   },
@@ -467,7 +467,7 @@ export const SEED_PLAYERS: Player[] = [
     "name": "Mohamed Fashan",
     "shortName": "M. Fashan",
     "teamId": "edcc603d-db13-4191-813c-44abb06c883c",
-    "role": "Wicketkeeper",
+    "role": "Unspecified",
     "avatar": "https://emlhfbbkwdpmdodjruje.supabase.co/storage/v1/object/public/player_avatars/mohamed-fashan-pbwm-1786961735202.webp",
     "slug": "mohamed-fashan-pbwm"
   },
@@ -476,7 +476,7 @@ export const SEED_PLAYERS: Player[] = [
     "name": "Mohamed Faslan",
     "shortName": "M. Faslan",
     "teamId": "832b3866-046c-4beb-970a-4d79cc72ba37",
-    "role": "Bowler",
+    "role": "Unspecified",
     "slug": "mohamed-faslan-kwgo"
   },
   {
@@ -484,7 +484,7 @@ export const SEED_PLAYERS: Player[] = [
     "name": "Mohamed Haris",
     "shortName": "M. Haris",
     "teamId": "c1397164-6f86-4639-93e6-888e0091bb51",
-    "role": "Batter",
+    "role": "Unspecified",
     "avatar": "https://emlhfbbkwdpmdodjruje.supabase.co/storage/v1/object/public/player_avatars/mohamed-haris-o9bv-1786965287050.webp",
     "slug": "mohamed-haris-o9bv"
   },
@@ -492,7 +492,7 @@ export const SEED_PLAYERS: Player[] = [
     "id": "6f789bdd-88e6-4b98-bae8-8d49688c718c",
     "name": "Mohamed Haseem",
     "shortName": "M. Haseem",
-    "role": "All-rounder",
+    "role": "Unspecified",
     "avatar": "https://emlhfbbkwdpmdodjruje.supabase.co/storage/v1/object/public/player_avatars/mohamed-haseem-1hpz-1786807681715.webp",
     "slug": "mohamed-haseem-1hpz"
   },
@@ -500,7 +500,7 @@ export const SEED_PLAYERS: Player[] = [
     "id": "968abae5-29ec-4625-821a-e94ed30d35e2",
     "name": "Mohamed ifam",
     "shortName": "M. ifam",
-    "role": "Bowler",
+    "role": "Unspecified",
     "avatar": "https://emlhfbbkwdpmdodjruje.supabase.co/storage/v1/object/public/player_avatars/mohamed-ifam-41vm-1787020372066.webp",
     "slug": "mohamed-ifam-41vm"
   },
@@ -509,7 +509,7 @@ export const SEED_PLAYERS: Player[] = [
     "name": "Mohamed Iflal Mohamed Imdhadh",
     "shortName": "M. Imdhadh",
     "teamId": "53a3ea75-b3cf-4908-a19b-d3f3b693b3fd",
-    "role": "Bowler",
+    "role": "Unspecified",
     "avatar": "https://emlhfbbkwdpmdodjruje.supabase.co/storage/v1/object/public/player_avatars/mohamed-iflal-mohamed-imdhadh-phmu-1786897622113.webp",
     "slug": "mohamed-iflal-mohamed-imdhadh-phmu"
   },
@@ -518,7 +518,7 @@ export const SEED_PLAYERS: Player[] = [
     "name": "Mohamed Imran",
     "shortName": "M. Imran",
     "teamId": "832b3866-046c-4beb-970a-4d79cc72ba37",
-    "role": "Batter",
+    "role": "Unspecified",
     "avatar": "https://emlhfbbkwdpmdodjruje.supabase.co/storage/v1/object/public/player_avatars/mohamed-imran-m3c9-1786797910452.webp",
     "slug": "mohamed-imran-m3c9"
   },
@@ -527,7 +527,7 @@ export const SEED_PLAYERS: Player[] = [
     "name": "Mohamed Irfaan",
     "shortName": "M. Irfaan",
     "teamId": "edcc603d-db13-4191-813c-44abb06c883c",
-    "role": "All-rounder",
+    "role": "Unspecified",
     "avatar": "https://emlhfbbkwdpmdodjruje.supabase.co/storage/v1/object/public/player_avatars/mohamed-irfaan-6q97-1786798214048.webp",
     "slug": "mohamed-irfaan-6q97"
   },
@@ -536,7 +536,7 @@ export const SEED_PLAYERS: Player[] = [
     "name": "Mohamed Ishrath",
     "shortName": "M. Ishrath",
     "teamId": "9d930c5d-c96b-43ef-8be7-fed8c71133df",
-    "role": "Bowler",
+    "role": "Unspecified",
     "avatar": "https://emlhfbbkwdpmdodjruje.supabase.co/storage/v1/object/public/player_avatars/mohamed-ishrath-dg14-1786958854365.webp",
     "slug": "mohamed-ishrath-dg14"
   },
@@ -545,7 +545,7 @@ export const SEED_PLAYERS: Player[] = [
     "name": "Mohamed ismath",
     "shortName": "M. ismath",
     "teamId": "edcc603d-db13-4191-813c-44abb06c883c",
-    "role": "Batter",
+    "role": "Unspecified",
     "avatar": "https://emlhfbbkwdpmdodjruje.supabase.co/storage/v1/object/public/player_avatars/mohamed-ismath-f7xz-1786798654939.webp",
     "slug": "mohamed-ismath-f7xz"
   },
@@ -554,7 +554,7 @@ export const SEED_PLAYERS: Player[] = [
     "name": "Mohamed lareef",
     "shortName": "M. lareef",
     "teamId": "f36ace20-1b45-43e4-be94-7a0f8a678fd9",
-    "role": "All-rounder",
+    "role": "Unspecified",
     "avatar": "https://emlhfbbkwdpmdodjruje.supabase.co/storage/v1/object/public/player_avatars/mohamed-lareef-a9c1-1786974315577.webp",
     "slug": "mohamed-lareef-a9c1"
   },
@@ -563,7 +563,7 @@ export const SEED_PLAYERS: Player[] = [
     "name": "Mohamed mohamed sinan",
     "shortName": "M. sinan",
     "teamId": "edcc603d-db13-4191-813c-44abb06c883c",
-    "role": "Bowler",
+    "role": "Unspecified",
     "avatar": "https://emlhfbbkwdpmdodjruje.supabase.co/storage/v1/object/public/player_avatars/mohamed-mohamed-sinan-at2p-1786817717865.webp",
     "slug": "mohamed-mohamed-sinan-at2p"
   },
@@ -572,7 +572,7 @@ export const SEED_PLAYERS: Player[] = [
     "name": "MOHAMED MUBARAK",
     "shortName": "M. MUBARAK",
     "teamId": "edcc603d-db13-4191-813c-44abb06c883c",
-    "role": "All-rounder",
+    "role": "Unspecified",
     "avatar": "https://emlhfbbkwdpmdodjruje.supabase.co/storage/v1/object/public/player_avatars/mohamed-mubarak-1ffh-1787055985544.jpg",
     "slug": "mohamed-mubarak-1ffh"
   },
@@ -581,7 +581,7 @@ export const SEED_PLAYERS: Player[] = [
     "name": "Mohamed Mubashshir",
     "shortName": "M. Mubashshir",
     "teamId": "9d930c5d-c96b-43ef-8be7-fed8c71133df",
-    "role": "Batter",
+    "role": "Unspecified",
     "avatar": "https://emlhfbbkwdpmdodjruje.supabase.co/storage/v1/object/public/player_avatars/mohamed-mubashshir-flt7-1786849067307.webp",
     "slug": "mohamed-mubashshir-flt7"
   },
@@ -590,7 +590,7 @@ export const SEED_PLAYERS: Player[] = [
     "name": "Mohamed Muneer",
     "shortName": "M. Muneer",
     "teamId": "f36ace20-1b45-43e4-be94-7a0f8a678fd9",
-    "role": "Batter",
+    "role": "Unspecified",
     "avatar": "https://emlhfbbkwdpmdodjruje.supabase.co/storage/v1/object/public/player_avatars/mohamed-muneer-v8ke-1786803397304.webp",
     "slug": "mohamed-muneer-v8ke"
   },
@@ -598,7 +598,7 @@ export const SEED_PLAYERS: Player[] = [
     "id": "8eea3398-322c-4ad4-95af-ce15ced6bea8",
     "name": "Mohamed Musthaq",
     "shortName": "M. Musthaq",
-    "role": "All-rounder",
+    "role": "Unspecified",
     "avatar": "https://emlhfbbkwdpmdodjruje.supabase.co/storage/v1/object/public/player_avatars/mohamed-musthaq-53nu-1786821340370.webp",
     "slug": "mohamed-musthaq-53nu"
   },
@@ -607,7 +607,7 @@ export const SEED_PLAYERS: Player[] = [
     "name": "Mohamed Nafees",
     "shortName": "M. Nafees",
     "teamId": "f36ace20-1b45-43e4-be94-7a0f8a678fd9",
-    "role": "Bowler",
+    "role": "Unspecified",
     "avatar": "https://emlhfbbkwdpmdodjruje.supabase.co/storage/v1/object/public/player_avatars/mohamed-nafees-rfab-1787454392618.jpg",
     "slug": "mohamed-nafees-rfab"
   },
@@ -616,7 +616,7 @@ export const SEED_PLAYERS: Player[] = [
     "name": "Mohamed Nasar",
     "shortName": "M. Nasar",
     "teamId": "c1397164-6f86-4639-93e6-888e0091bb51",
-    "role": "All-rounder",
+    "role": "Unspecified",
     "avatar": "https://emlhfbbkwdpmdodjruje.supabase.co/storage/v1/object/public/player_avatars/mohamed-nasar-72l1-1786885063340.webp",
     "slug": "mohamed-nasar-72l1"
   },
@@ -625,7 +625,7 @@ export const SEED_PLAYERS: Player[] = [
     "name": "Mohamed Nasardeen",
     "shortName": "M. Nasardeen",
     "teamId": "832b3866-046c-4beb-970a-4d79cc72ba37",
-    "role": "All-rounder",
+    "role": "Unspecified",
     "avatar": "https://emlhfbbkwdpmdodjruje.supabase.co/storage/v1/object/public/player_avatars/mohamed-nasardeen-dep1-1786781391980.webp",
     "slug": "mohamed-nasardeen-dep1"
   },
@@ -634,7 +634,7 @@ export const SEED_PLAYERS: Player[] = [
     "name": "MOHAMED NISAR MOHAMED SHURAIF",
     "shortName": "M. SHURAIF",
     "teamId": "832b3866-046c-4beb-970a-4d79cc72ba37",
-    "role": "Bowler",
+    "role": "Unspecified",
     "avatar": "https://emlhfbbkwdpmdodjruje.supabase.co/storage/v1/object/public/player_avatars/mohamed-nisar-mohamed-shuraif-pq31-1787048879909.webp",
     "slug": "mohamed-nisar-mohamed-shuraif-pq31"
   },
@@ -642,7 +642,7 @@ export const SEED_PLAYERS: Player[] = [
     "id": "c4b7f053-ccc1-4f2e-b63d-fe42d8e3ee07",
     "name": "Mohamed Nizam Mohamed sajith",
     "shortName": "M. sajith",
-    "role": "Wicketkeeper",
+    "role": "Unspecified",
     "avatar": "https://emlhfbbkwdpmdodjruje.supabase.co/storage/v1/object/public/player_avatars/mohamed-nizam-mohamed-sajith-pnvm-1786872309086.webp",
     "slug": "mohamed-nizam-mohamed-sajith-pnvm"
   },
@@ -651,7 +651,7 @@ export const SEED_PLAYERS: Player[] = [
     "name": "Mohamed Ramees",
     "shortName": "M. Ramees",
     "teamId": "f36ace20-1b45-43e4-be94-7a0f8a678fd9",
-    "role": "All-rounder",
+    "role": "Unspecified",
     "avatar": "https://emlhfbbkwdpmdodjruje.supabase.co/storage/v1/object/public/player_avatars/mohamed-ramees-q290-1786798126702.webp",
     "slug": "mohamed-ramees-q290"
   },
@@ -660,7 +660,7 @@ export const SEED_PLAYERS: Player[] = [
     "name": "Mohamed Ramsan",
     "shortName": "M. Ramsan",
     "teamId": "edcc603d-db13-4191-813c-44abb06c883c",
-    "role": "Bowler",
+    "role": "Unspecified",
     "avatar": "https://emlhfbbkwdpmdodjruje.supabase.co/storage/v1/object/public/player_avatars/mohamed-ramsan-jlzt-1786814347075.webp",
     "slug": "mohamed-ramsan-jlzt"
   },
@@ -669,7 +669,7 @@ export const SEED_PLAYERS: Player[] = [
     "name": "Mohamed raseen",
     "shortName": "M. raseen",
     "teamId": "c1397164-6f86-4639-93e6-888e0091bb51",
-    "role": "Batter",
+    "role": "Unspecified",
     "avatar": "https://emlhfbbkwdpmdodjruje.supabase.co/storage/v1/object/public/player_avatars/mohamed-raseen-zuxf-1786896601876.webp",
     "slug": "mohamed-raseen-zuxf"
   },
@@ -678,7 +678,7 @@ export const SEED_PLAYERS: Player[] = [
     "name": "Mohamed Raslan",
     "shortName": "M. Raslan",
     "teamId": "c1397164-6f86-4639-93e6-888e0091bb51",
-    "role": "Bowler",
+    "role": "Unspecified",
     "avatar": "https://emlhfbbkwdpmdodjruje.supabase.co/storage/v1/object/public/player_avatars/mohamed-raslan-kent-1786985515070.jpg",
     "slug": "mohamed-raslan-kent"
   },
@@ -687,7 +687,7 @@ export const SEED_PLAYERS: Player[] = [
     "name": "Mohamed Riswan",
     "shortName": "M. Riswan",
     "teamId": "9d930c5d-c96b-43ef-8be7-fed8c71133df",
-    "role": "All-rounder",
+    "role": "Unspecified",
     "avatar": "https://emlhfbbkwdpmdodjruje.supabase.co/storage/v1/object/public/player_avatars/mohamed-riswan-809k-1786783507650.webp",
     "slug": "mohamed-riswan-809k"
   },
@@ -696,7 +696,7 @@ export const SEED_PLAYERS: Player[] = [
     "name": "Mohamed Rusni",
     "shortName": "M. Rusni",
     "teamId": "edcc603d-db13-4191-813c-44abb06c883c",
-    "role": "All-rounder",
+    "role": "Unspecified",
     "avatar": "https://emlhfbbkwdpmdodjruje.supabase.co/storage/v1/object/public/player_avatars/mohamed-rusni-n8vg-1786802814033.webp",
     "slug": "mohamed-rusni-n8vg"
   },
@@ -705,7 +705,7 @@ export const SEED_PLAYERS: Player[] = [
     "name": "Mohamed sabry Basith Ahamed",
     "shortName": "M. Ahamed",
     "teamId": "53a3ea75-b3cf-4908-a19b-d3f3b693b3fd",
-    "role": "Bowler",
+    "role": "Unspecified",
     "avatar": "https://emlhfbbkwdpmdodjruje.supabase.co/storage/v1/object/public/player_avatars/mohamed-sabry-basith-ahamed-1ogw-1786897937440.webp",
     "slug": "mohamed-sabry-basith-ahamed-1ogw"
   },
@@ -714,7 +714,7 @@ export const SEED_PLAYERS: Player[] = [
     "name": "Mohamed shamil",
     "shortName": "M. shamil",
     "teamId": "9d930c5d-c96b-43ef-8be7-fed8c71133df",
-    "role": "All-rounder",
+    "role": "Unspecified",
     "avatar": "https://emlhfbbkwdpmdodjruje.supabase.co/storage/v1/object/public/player_avatars/mohamed-shamil-pu89-1786801958085.webp",
     "slug": "mohamed-shamil-pu89"
   },
@@ -723,7 +723,7 @@ export const SEED_PLAYERS: Player[] = [
     "name": "Mohamed Sharafdheen Mohamed Iflal",
     "shortName": "M. Iflal",
     "teamId": "832b3866-046c-4beb-970a-4d79cc72ba37",
-    "role": "Wicketkeeper",
+    "role": "Unspecified",
     "avatar": "https://emlhfbbkwdpmdodjruje.supabase.co/storage/v1/object/public/player_avatars/mohamed-sharafdheen-mohamed-iflal-mmnl-1786897109917.webp",
     "slug": "mohamed-sharafdheen-mohamed-iflal-mmnl"
   },
@@ -732,7 +732,7 @@ export const SEED_PLAYERS: Player[] = [
     "name": "Mohamed Sifan Mohamed Fawzan",
     "shortName": "M. Fawzan",
     "teamId": "f36ace20-1b45-43e4-be94-7a0f8a678fd9",
-    "role": "Bowler",
+    "role": "Unspecified",
     "avatar": "https://emlhfbbkwdpmdodjruje.supabase.co/storage/v1/object/public/player_avatars/mohamed-sifan-mohamed-fawzan-8s2p-1786877056306.webp",
     "slug": "mohamed-sifan-mohamed-fawzan-8s2p"
   },
@@ -741,7 +741,7 @@ export const SEED_PLAYERS: Player[] = [
     "name": "Mohamed Zulfikar",
     "shortName": "M. Zulfikar",
     "teamId": "832b3866-046c-4beb-970a-4d79cc72ba37",
-    "role": "All-rounder",
+    "role": "Unspecified",
     "avatar": "https://emlhfbbkwdpmdodjruje.supabase.co/storage/v1/object/public/player_avatars/mohamed-asardeen-wih7-1786805698017.webp",
     "slug": "mohamed-asardeen-wih7"
   },
@@ -750,7 +750,7 @@ export const SEED_PLAYERS: Player[] = [
     "name": "Mohammad Rasik Mohammad Rizwan",
     "shortName": "M. Rizwan",
     "teamId": "9d930c5d-c96b-43ef-8be7-fed8c71133df",
-    "role": "Bowler",
+    "role": "Unspecified",
     "avatar": "https://emlhfbbkwdpmdodjruje.supabase.co/storage/v1/object/public/player_avatars/mohammad-rasik-mohammad-rizwan-1aps-1786863164540.webp",
     "slug": "mohammad-rasik-mohammad-rizwan-1aps"
   },
@@ -759,7 +759,7 @@ export const SEED_PLAYERS: Player[] = [
     "name": "Mohammed Zakariya Mohammed Sahlan",
     "shortName": "M. Sahlan",
     "teamId": "c1397164-6f86-4639-93e6-888e0091bb51",
-    "role": "All-rounder",
+    "role": "Unspecified",
     "avatar": "https://emlhfbbkwdpmdodjruje.supabase.co/storage/v1/object/public/player_avatars/mohammed-zakariya-mohammed-sahlan-yb76-1786967625167.webp",
     "slug": "mohammed-zakariya-mohammed-sahlan-yb76"
   },
@@ -768,7 +768,7 @@ export const SEED_PLAYERS: Player[] = [
     "name": "MOHOMED RIYAF",
     "shortName": "M. RIYAF",
     "teamId": "f36ace20-1b45-43e4-be94-7a0f8a678fd9",
-    "role": "All-rounder",
+    "role": "Unspecified",
     "avatar": "https://emlhfbbkwdpmdodjruje.supabase.co/storage/v1/object/public/player_avatars/mohomed-riyaf-20mz-1786807755452.webp",
     "slug": "mohomed-riyaf-20mz"
   },
@@ -777,7 +777,7 @@ export const SEED_PLAYERS: Player[] = [
     "name": "Muzeer khan",
     "shortName": "M. khan",
     "teamId": "c1397164-6f86-4639-93e6-888e0091bb51",
-    "role": "Bowler",
+    "role": "Unspecified",
     "avatar": "https://emlhfbbkwdpmdodjruje.supabase.co/storage/v1/object/public/player_avatars/muzeer-khan-j2nu-1787077274014.webp",
     "slug": "muzeer-khan-j2nu"
   },
@@ -786,7 +786,7 @@ export const SEED_PLAYERS: Player[] = [
     "name": "Rasheed Ahamed",
     "shortName": "R. Ahamed",
     "teamId": "c1397164-6f86-4639-93e6-888e0091bb51",
-    "role": "Batter",
+    "role": "Unspecified",
     "avatar": "https://emlhfbbkwdpmdodjruje.supabase.co/storage/v1/object/public/player_avatars/rasheed-ahamed-0uny-1786785606914.webp",
     "slug": "rasheed-ahamed-0uny"
   },
@@ -795,7 +795,7 @@ export const SEED_PLAYERS: Player[] = [
     "name": "Rashidh Rizwan",
     "shortName": "R. Rizwan",
     "teamId": "832b3866-046c-4beb-970a-4d79cc72ba37",
-    "role": "All-rounder",
+    "role": "Unspecified",
     "avatar": "https://emlhfbbkwdpmdodjruje.supabase.co/storage/v1/object/public/player_avatars/rashidh-rizwan-qv5h-1786781812493.webp",
     "slug": "rashidh-rizwan-qv5h"
   },
@@ -804,7 +804,7 @@ export const SEED_PLAYERS: Player[] = [
     "name": "Riswan Bawa",
     "shortName": "R. Bawa",
     "teamId": "832b3866-046c-4beb-970a-4d79cc72ba37",
-    "role": "Batter",
+    "role": "Unspecified",
     "avatar": "https://emlhfbbkwdpmdodjruje.supabase.co/storage/v1/object/public/player_avatars/riswan-bawa-6t20-1786800951324.webp",
     "slug": "riswan-bawa-6t20"
   },
@@ -813,7 +813,7 @@ export const SEED_PLAYERS: Player[] = [
     "name": "Safwan",
     "shortName": "Safwan",
     "teamId": "c1397164-6f86-4639-93e6-888e0091bb51",
-    "role": "All-rounder",
+    "role": "Unspecified",
     "avatar": "https://emlhfbbkwdpmdodjruje.supabase.co/storage/v1/object/public/player_avatars/safwam-65j8-1786800891310.webp",
     "slug": "safwam-65j8"
   },
@@ -822,7 +822,7 @@ export const SEED_PLAYERS: Player[] = [
     "name": "Sajith",
     "shortName": "Sajith",
     "teamId": "832b3866-046c-4beb-970a-4d79cc72ba37",
-    "role": "Bowler",
+    "role": "Unspecified",
     "avatar": "https://emlhfbbkwdpmdodjruje.supabase.co/storage/v1/object/public/player_avatars/sajith-tmsm-1787045845488.webp",
     "slug": "sajith-tmsm"
   },
@@ -831,7 +831,7 @@ export const SEED_PLAYERS: Player[] = [
     "name": "Shimlath ahamed",
     "shortName": "S. ahamed",
     "teamId": "53a3ea75-b3cf-4908-a19b-d3f3b693b3fd",
-    "role": "All-rounder",
+    "role": "Unspecified",
     "avatar": "https://emlhfbbkwdpmdodjruje.supabase.co/storage/v1/object/public/player_avatars/shimlath-ahamed-xgmo-1787071085826.webp",
     "slug": "shimlath-ahamed-xgmo"
   },
@@ -839,7 +839,7 @@ export const SEED_PLAYERS: Player[] = [
     "id": "da8edb1b-e08a-4fd3-8cd8-06840fbc5a8f",
     "name": "Thoufeek Jaleel",
     "shortName": "T. Jaleel",
-    "role": "Bowler",
+    "role": "Unspecified",
     "avatar": "https://emlhfbbkwdpmdodjruje.supabase.co/storage/v1/object/public/player_avatars/thoufeek-jaleel-dacc-1786808457741.webp",
     "slug": "thoufeek-jaleel-dacc"
   },
@@ -848,7 +848,7 @@ export const SEED_PLAYERS: Player[] = [
     "name": "Yunoos",
     "shortName": "Yunoos",
     "teamId": "832b3866-046c-4beb-970a-4d79cc72ba37",
-    "role": "Bowler",
+    "role": "Unspecified",
     "avatar": "https://emlhfbbkwdpmdodjruje.supabase.co/storage/v1/object/public/player_avatars/yunoos-vlux-1786781246171.webp",
     "slug": "yunoos-vlux"
   }

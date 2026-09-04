@@ -617,7 +617,7 @@ function ObsHandlerIndex() {
                       payload: {
                         batterName: selectedBatterObj.name,
                         teamName: currentSelectedTeamObj?.name || "Batting Team",
-                        role: selectedBatterObj.role || "Batsman",
+                        role: (selectedBatterObj.role && selectedBatterObj.role !== "Unspecified") ? selectedBatterObj.role : "Player",
                         avatar: selectedBatterObj.avatar || (selectedBatterObj as any).avatarUrl || lookup.player(selectedBatterObj.id)?.avatar,
                         stats: selectedBatterObj.battingStyle ? `Batting: ${selectedBatterObj.battingStyle}` : undefined,
                       },

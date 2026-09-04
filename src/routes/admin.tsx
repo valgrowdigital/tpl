@@ -1462,7 +1462,7 @@ function AdminPortalPage() {
                             <td className="px-4 py-3">
                               <div className="flex items-center gap-1.5">
                                 <select
-                                  value={p.role || "Batter"}
+                                  value={p.role || "Unspecified"}
                                   disabled={updatingPlayerRoleId === p.id}
                                   onChange={(e) => handleQuickRoleUpdate(p.id, e.target.value as PlayerRole)}
                                   className={`text-[10px] font-black uppercase tracking-wider rounded-lg px-2.5 py-1 border transition-colors cursor-pointer focus:outline-none focus:ring-2 focus:ring-[#D9A928]/40 ${
@@ -1472,10 +1472,13 @@ function AdminPortalPage() {
                                       ? "bg-blue-50 text-blue-800 border-blue-200 hover:bg-blue-100"
                                       : p.role === "Wicketkeeper"
                                       ? "bg-amber-50 text-amber-800 border-amber-200 hover:bg-amber-100"
-                                      : "bg-slate-50 text-slate-800 border-slate-200 hover:bg-slate-100"
+                                      : p.role === "Batter"
+                                      ? "bg-emerald-50 text-emerald-800 border-emerald-200 hover:bg-emerald-100"
+                                      : "bg-slate-100 text-slate-500 border-dashed border-slate-300 hover:bg-slate-200 hover:text-slate-700"
                                   }`}
                                   title="Click to assign or change player role"
                                 >
+                                  <option value="Unspecified">— Assign Role —</option>
                                   <option value="Batter">Batter</option>
                                   <option value="Bowler">Bowler</option>
                                   <option value="All-rounder">All-rounder</option>
@@ -1501,7 +1504,7 @@ function AdminPortalPage() {
                                   <button
                                     onClick={() => {
                                       setSelectedPlayerForView(p);
-                                      setEditingPlayerRole((p.role as PlayerRole) || "Batter");
+                                      setEditingPlayerRole((p.role as PlayerRole) || "Unspecified");
                                       setRoleUpdateSuccess(null);
                                       setEditingPlayerTeamId("");
                                       setTeamUpdateSuccess(null);
@@ -1519,7 +1522,7 @@ function AdminPortalPage() {
                                 <button
                                   onClick={() => {
                                     setSelectedPlayerForView(p);
-                                    setEditingPlayerRole((p.role as PlayerRole) || "Batter");
+                                    setEditingPlayerRole((p.role as PlayerRole) || "Unspecified");
                                     setRoleUpdateSuccess(null);
                                     setEditingPlayerTeamId(p.teamId || "");
                                     setTeamUpdateSuccess(null);
@@ -3756,11 +3759,12 @@ function AdminPortalPage() {
               </div>
               <div className="flex items-center gap-2">
                 <select
-                  value={editingPlayerRole}
+                  value={editingPlayerRole || "Unspecified"}
                   onChange={(e) => setEditingPlayerRole(e.target.value as PlayerRole)}
                   disabled={isUpdatingRole}
                   className="flex-1 bg-white border border-[#D1D5DB] rounded-xl px-3 py-2 text-xs font-bold text-[#111827] focus:outline-none min-h-[44px]"
                 >
+                  <option value="Unspecified">— Unassigned / Unspecified —</option>
                   <option value="Batter">Batter</option>
                   <option value="Bowler">Bowler</option>
                   <option value="Wicketkeeper">Wicketkeeper</option>

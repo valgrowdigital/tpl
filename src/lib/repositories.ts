@@ -224,7 +224,7 @@ export function toPlayer(row: SupabaseRegistration): Player {
     ""
   ).toLowerCase().trim();
 
-  let role: PlayerRole = customRole || "Batter";
+  let role: PlayerRole = customRole || "Unspecified";
   
   if (!customRole) {
     if (rawRole.includes("all") || rawRole.includes("round")) {
@@ -235,12 +235,12 @@ export function toPlayer(row: SupabaseRegistration): Player {
       role = "Wicketkeeper";
     } else if (rawRole.includes("bat")) {
       role = "Batter";
-    } else if (rawRole) {
+    } else if (rawRole && rawRole !== "unspecified" && rawRole !== "null" && rawRole !== "none") {
       if (rawRole === "all-rounder" || rawRole === "allrounder") role = "All-rounder";
       else if (rawRole === "bowler") role = "Bowler";
       else if (rawRole === "wicketkeeper") role = "Wicketkeeper";
       else if (rawRole === "batter" || rawRole === "batsman") role = "Batter";
-      else role = "All-rounder";
+      else role = "Unspecified";
     } else {
       const seed = SEED_PLAYERS.find(
         (s) => s.id === row.id || s.name.toLowerCase() === (row.player_name || "").toLowerCase()
@@ -248,13 +248,7 @@ export function toPlayer(row: SupabaseRegistration): Player {
       if (seed?.role && seed.role !== "Unspecified") {
         role = seed.role;
       } else {
-        // Balanced cricket squad role assignment
-        const hash = (row.id || row.player_name || "").split("").reduce((acc, c) => acc + c.charCodeAt(0), 0);
-        const mod = hash % 10;
-        if (mod < 4) role = "All-rounder";
-        else if (mod < 7) role = "Bowler";
-        else if (mod < 9) role = "Batter";
-        else role = "Wicketkeeper";
+        role = "Unspecified";
       }
     }
   }
@@ -900,7 +894,7 @@ export class SupabasePlayerRepository implements PlayerRepository {
   async createPlayer(input: CreatePlayerInput): Promise<Player> {
     const id = typeof crypto !== "undefined" && crypto.randomUUID ? crypto.randomUUID() : `player-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`;
     const slug = input.name.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "");
-    const role: PlayerRole = input.role || "Batter";
+    const role: PlayerRole = input.role || "Unspecified";
     const teamId = input.teamId || "";
     const referenceId = input.referenceId || `TPL-${String(lookup.players().length + 1).padStart(3, "0")}`;
 
