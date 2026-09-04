@@ -402,8 +402,10 @@ function ObsHandlerIndex() {
                   type: "ADVERTISEMENT",
                   duration: 0,
                   payload: {
-                    title: "POWERED BY VALGROW LABS",
-                    subtitle: "Official Technology Partner",
+                    sponsorName: "VALGROW AI & TECHNOLOGY LAB",
+                    title: "VALGROW AI & TECHNOLOGY LAB",
+                    tagline: "Official AI, Deep Tech & Real-Time Computer Vision Partner · TPL 2026",
+                    subtitle: "Powering TPL 2026 with ultra-low latency predictive AI models, edge computer vision ball-tracking, automated telemetry, and next-generation sports intelligence platforms.",
                     mediaUrl: "/valgrow-labs-logo.jpeg",
                   },
                 });
@@ -414,8 +416,8 @@ function ObsHandlerIndex() {
                   : "bg-[#1A1A1A] border-[#333333] text-white/70 hover:border-white/30"
               }`}
             >
-              <p className="text-[10px] font-black uppercase tracking-wider text-[#D9A928]">SPONSOR BREAK</p>
-              <p className="text-[9px] text-[#888888]">ValGrow Labs Ad Card</p>
+              <p className="text-[10px] font-black uppercase tracking-wider text-[#D9A928]">AI & TECH LAB AD</p>
+              <p className="text-[9px] text-[#888888]">ValGrow AI Lab Card</p>
             </button>
 
             <button
@@ -767,8 +769,10 @@ function ObsHandlerIndex() {
                   type: "ADVERTISEMENT",
                   duration: 0,
                   payload: {
-                    title: "POWERED BY VALGROW LABS",
-                    subtitle: "Official Technology Partner",
+                    sponsorName: "VALGROW AI & TECHNOLOGY LAB",
+                    title: "VALGROW AI & TECHNOLOGY LAB",
+                    tagline: "Official AI, Deep Tech & Real-Time Computer Vision Partner · TPL 2026",
+                    subtitle: "Powering TPL 2026 with ultra-low latency predictive AI models, edge computer vision ball-tracking, automated telemetry, and next-generation sports intelligence platforms.",
                     mediaUrl: "/valgrow-labs-logo.jpeg",
                   },
                 });
@@ -786,9 +790,9 @@ function ObsHandlerIndex() {
               </div>
               <div className="text-left">
                 <p className="text-xs font-black uppercase tracking-wider">
-                  {activeGraphic?.type === "ADVERTISEMENT" ? "STOP COMMERCIAL BREAK" : "RUN COMMERCIAL BREAK"}
+                  {activeGraphic?.type === "ADVERTISEMENT" ? "STOP AI LAB AD SHOWCASE" : "RUN AI LAB AD SHOWCASE"}
                 </p>
-                <p className="text-[9px] text-white/60">ValGrow Labs Sponsor Card</p>
+                <p className="text-[9px] text-white/60">ValGrow AI & Technology Lab Ad Card</p>
               </div>
             </div>
             <span className="text-[9px] font-black uppercase px-2 py-1 rounded bg-black/30 tracking-widest">

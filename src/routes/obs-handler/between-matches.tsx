@@ -166,7 +166,7 @@ function ObsBetweenMatches() {
 
   const graphics = [
     { id: "NEW_BATTER", label: "NEXT BATSMAN ENTRY", icon: User, desc: "Pick & showcase incoming batsman" },
-    { id: "ADVERTISEMENT", label: "SPONSOR AD BREAK", icon: Sparkles, desc: "Show ValGrow sponsor ad card" },
+    { id: "ADVERTISEMENT", label: "AI & TECH LAB AD", icon: Sparkles, desc: "Show ValGrow AI & Tech Lab Card" },
     { id: "UPCOMING", label: "UPCOMING MATCHES", icon: Calendar, desc: "Show tournament next fixtures" },
     { id: "SQUADS", label: "TEAM SQUADS", icon: Users, desc: "Playing XI & substitutes preview" },
     { id: "INNINGS_BREAK", label: "1ST INN SCORECARD", icon: Target, desc: "Show 1st innings stats & target" },
@@ -208,8 +208,10 @@ function ObsBetweenMatches() {
       };
     } else if (type === "ADVERTISEMENT") {
       extraPayload = {
-        title: "POWERED BY VALGROW LABS",
-        subtitle: "Official Technology Partner",
+        sponsorName: "VALGROW AI & TECHNOLOGY LAB",
+        title: "VALGROW AI & TECHNOLOGY LAB",
+        tagline: "Official AI, Deep Tech & Real-Time Computer Vision Partner · TPL 2026",
+        subtitle: "Powering TPL 2026 with ultra-low latency predictive AI models, edge computer vision ball-tracking, automated telemetry, and next-generation sports intelligence platforms.",
         mediaUrl: "/valgrow-labs-logo.jpeg",
       };
     }
