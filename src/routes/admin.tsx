@@ -1,4 +1,4 @@
-import { useState, useMemo, useEffect } from "react";
+import { useState, useMemo, useEffect, useRef } from "react";
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useQueryClient } from "@tanstack/react-query";
 import { useMatches, useTeams, usePlayers } from "@/hooks/useCricketData";
@@ -7,7 +7,7 @@ import { lookup, matchRepository, playerRepository, TOURNAMENT_NAME } from "@/li
 import { broadcastTournamentUpdate } from "@/lib/scoring/store";
 import { Logo } from "@/components/brand/Logo";
 import { TeamLogo } from "@/components/team/TeamLogo";
-import { formatMatchTime, parseTime12To24, parse24ToTime12 } from "@/lib/utils";
+import { formatMatchTime, parseTime12To24, parse24ToTime12, resizeImageToDataUrl } from "@/lib/utils";
 import type { Match, Player, Team, PlayerRole } from "@/types/cricket";
 import { BALLS_PER_OVER, getTeamGroup } from "@/types/cricket";
 import { parseYoutubeEmbedUrl } from "@/lib/youtube";
@@ -45,6 +45,9 @@ import {
   ExternalLink,
   ChevronRight,
   Menu,
+  Camera,
+  Upload,
+  Image as ImageIcon,
 } from "lucide-react";
 
 import {
@@ -150,6 +153,14 @@ function AdminPortalPage() {
   const [editingPlayerRole, setEditingPlayerRole] = useState<PlayerRole>("Batter");
   const [roleUpdateSuccess, setRoleUpdateSuccess] = useState<string | null>(null);
   const [isUpdatingRole, setIsUpdatingRole] = useState(false);
+
+  // Player photo / avatar edit state
+  const [editingPlayerAvatar, setEditingPlayerAvatar] = useState<string | null>(null);
+  const [avatarUpdateSuccess, setAvatarUpdateSuccess] = useState<string | null>(null);
+  const [avatarUpdateError, setAvatarUpdateError] = useState<string | null>(null);
+  const [isUpdatingAvatar, setIsUpdatingAvatar] = useState(false);
+  const [avatarInputUrl, setAvatarInputUrl] = useState("");
+  const avatarFileInputRef = useRef<HTMLInputElement>(null);
 
   const [showKnockoutModal, setShowKnockoutModal] = useState(false);
   const [knockoutStage, setKnockoutStage] = useState<"Semi-Final 1" | "Semi-Final 2" | "Final">("Semi-Final 1");
@@ -1261,6 +1272,10 @@ function AdminPortalPage() {
                                 setSelectedPlayerForView(p);
                                 setEditingPlayerRole((p.role as PlayerRole) || "Batter");
                                 setRoleUpdateSuccess(null);
+                                setEditingPlayerAvatar(p.avatar || null);
+                                setAvatarUpdateSuccess(null);
+                                setAvatarUpdateError(null);
+                                setAvatarInputUrl("");
                               }}
                               className="tap inline-flex items-center gap-1 px-3 py-1.5 rounded-lg bg-[#F3F4F6] hover:bg-[#D9A928] text-[#111827] hover:text-[#111111] font-black text-[10px] uppercase tracking-wider border border-[#E5E7EB] transition-all"
                             >
@@ -2944,36 +2959,181 @@ function AdminPortalPage() {
         </div>
       )}
 
-      {/* ── PLAYER PROFILE VIEW MODAL ───────────────────────────────────── */}
+      {/* ── PLAYER PROFILE VIEW & EDIT MODAL ────────────────────────────── */}
       {selectedPlayerForView && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
-          <div className="w-full max-w-md bg-white border border-[#E5E7EB] rounded-3xl p-6 flex flex-col gap-5 shadow-2xl">
+          <div className="w-full max-w-md bg-white border border-[#E5E7EB] rounded-3xl p-6 flex flex-col gap-4 shadow-2xl max-h-[90vh] overflow-y-auto">
             <div className="flex items-center justify-between border-b border-[#E5E7EB] pb-3">
-              <h3 className="text-sm font-black uppercase text-[#9A6A05]">Player Registration Profile</h3>
+              <div>
+                <h3 className="text-sm font-black uppercase text-[#9A6A05]">Admin Player Management</h3>
+                <p className="text-[10px] text-[#6B7280] font-bold">Edit player photo, role, and profile details</p>
+              </div>
               <button onClick={() => setSelectedPlayerForView(null)} className="text-[#6B7280] hover:text-[#111827]">
                 <X className="h-5 w-5" />
               </button>
             </div>
 
-            <div className="flex items-center gap-4">
-              <div className="h-16 w-16 rounded-2xl bg-[#F3F4F6] border border-[#E5E7EB] flex items-center justify-center font-black text-xl text-[#9A6A05]">
-                {selectedPlayerForView.avatar ? (
-                  <img src={selectedPlayerForView.avatar} alt="" className="h-full w-full object-cover rounded-2xl" />
+            {/* Player Identity Summary */}
+            <div className="flex items-center gap-4 bg-[#F9FAFB] p-3 rounded-2xl border border-[#E5E7EB]">
+              <div className="h-16 w-16 rounded-2xl bg-white border border-[#E5E7EB] flex items-center justify-center font-black text-xl text-[#9A6A05] overflow-hidden shrink-0 shadow-xs">
+                {editingPlayerAvatar ? (
+                  <img src={editingPlayerAvatar} alt="" className="h-full w-full object-cover rounded-2xl" />
                 ) : (
                   selectedPlayerForView.name[0]
                 )}
               </div>
-              <div>
-                <h4 className="text-base font-black text-[#111827]">{selectedPlayerForView.name}</h4>
+              <div className="flex-1 min-w-0">
+                <h4 className="text-base font-black text-[#111827] truncate">{selectedPlayerForView.name}</h4>
                 <p className="text-xs text-[#9A6A05] font-bold">{selectedPlayerForView.role}</p>
                 <p className="text-[10px] text-[#6B7280]">{selectedPlayerForView.referenceId || `REF-${selectedPlayerForView.id.slice(0, 6)}`}</p>
+              </div>
+            </div>
+
+            {/* ── ADMIN PHOTO MANAGEMENT SECTION ── */}
+            <div className="p-3.5 rounded-2xl bg-[#F0FDF4] border border-[#BBF7D0] flex flex-col gap-3">
+              <div className="flex items-center justify-between">
+                <span className="text-[10px] font-black uppercase text-[#166534] tracking-wider flex items-center gap-1.5">
+                  <Camera className="h-3.5 w-3.5 text-emerald-600" />
+                  Player Photo Management
+                </span>
+                {avatarUpdateSuccess && (
+                  <span className="text-[10px] font-bold text-emerald-700 bg-emerald-100 px-2 py-0.5 rounded-md flex items-center gap-1">
+                    <CheckCircle2 className="h-3 w-3" />
+                    {avatarUpdateSuccess}
+                  </span>
+                )}
+              </div>
+
+              {avatarUpdateError && (
+                <div className="text-[10px] font-bold text-red-600 bg-red-50 p-2 rounded-lg border border-red-200">
+                  {avatarUpdateError}
+                </div>
+              )}
+
+              {/* Upload or change controls */}
+              <div className="flex flex-col gap-2">
+                <input
+                  type="file"
+                  ref={avatarFileInputRef}
+                  accept="image/*"
+                  className="hidden"
+                  onChange={async (e) => {
+                    const file = e.target.files?.[0];
+                    if (!file) return;
+                    setAvatarUpdateError(null);
+                    setAvatarUpdateSuccess(null);
+                    try {
+                      const dataUrl = await resizeImageToDataUrl(file, 400);
+                      setEditingPlayerAvatar(dataUrl);
+                    } catch (err: any) {
+                      setAvatarUpdateError("Failed to process image file. Please try another image.");
+                    }
+                  }}
+                />
+
+                <div className="grid grid-cols-2 gap-2">
+                  <button
+                    type="button"
+                    onClick={() => avatarFileInputRef.current?.click()}
+                    disabled={isUpdatingAvatar}
+                    className="tap py-2.5 px-3 rounded-xl bg-white border border-[#86EFAC] text-emerald-900 hover:bg-emerald-50 text-xs font-black uppercase tracking-wider flex items-center justify-center gap-1.5 shadow-xs transition-colors"
+                  >
+                    <Upload className="h-3.5 w-3.5 text-emerald-600" />
+                    <span>Upload Image</span>
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => {
+                      if (editingPlayerAvatar) {
+                        setEditingPlayerAvatar(null);
+                      } else {
+                        setEditingPlayerAvatar(selectedPlayerForView.avatar || null);
+                      }
+                      setAvatarUpdateSuccess(null);
+                      setAvatarUpdateError(null);
+                    }}
+                    disabled={isUpdatingAvatar}
+                    className="tap py-2.5 px-3 rounded-xl bg-white border border-[#D1D5DB] text-[#4B5563] hover:bg-[#F3F4F6] text-xs font-black uppercase tracking-wider flex items-center justify-center gap-1.5 shadow-xs transition-colors"
+                  >
+                    <Trash2 className="h-3.5 w-3.5 text-[#6B7280]" />
+                    <span>{editingPlayerAvatar ? "Clear Photo" : "Reset"}</span>
+                  </button>
+                </div>
+
+                {/* Direct Image URL input */}
+                <div className="flex items-center gap-1.5 mt-1">
+                  <input
+                    type="url"
+                    value={avatarInputUrl}
+                    onChange={(e) => setAvatarInputUrl(e.target.value)}
+                    placeholder="Paste image URL..."
+                    disabled={isUpdatingAvatar}
+                    className="flex-1 bg-white border border-[#D1D5DB] rounded-xl px-3 py-1.5 text-xs text-[#111827] placeholder:text-[#9CA3AF] focus:outline-none"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => {
+                      if (avatarInputUrl.trim()) {
+                        setEditingPlayerAvatar(avatarInputUrl.trim());
+                        setAvatarInputUrl("");
+                        setAvatarUpdateError(null);
+                      }
+                    }}
+                    disabled={!avatarInputUrl.trim() || isUpdatingAvatar}
+                    className="tap px-3 py-1.5 bg-[#111827] text-white rounded-xl text-xs font-black uppercase disabled:opacity-40"
+                  >
+                    Use URL
+                  </button>
+                </div>
+
+                {/* Save Avatar Action Button */}
+                {editingPlayerAvatar !== (selectedPlayerForView.avatar || null) && (
+                  <button
+                    type="button"
+                    onClick={async () => {
+                      if (!selectedPlayerForView) return;
+                      setIsUpdatingAvatar(true);
+                      setAvatarUpdateError(null);
+                      setAvatarUpdateSuccess(null);
+                      try {
+                        const targetAvatar = editingPlayerAvatar || "";
+                        const updated = await playerRepository.updateAvatar(selectedPlayerForView.id, targetAvatar);
+                        setSelectedPlayerForView(updated);
+                        queryClient.invalidateQueries({ queryKey: ["players"] });
+                        await refetchPlayers();
+                        broadcastTournamentUpdate();
+                        setAvatarUpdateSuccess("Photo saved successfully!");
+                      } catch (err: any) {
+                        console.error("[handleUpdateAvatar] error:", err);
+                        setAvatarUpdateError(err?.message || "Failed to save photo. Please try again.");
+                      } finally {
+                        setIsUpdatingAvatar(false);
+                      }
+                    }}
+                    disabled={isUpdatingAvatar}
+                    className="tap mt-1 w-full py-2.5 rounded-xl bg-[#D9A928] hover:bg-[#F4C542] text-[#111111] font-black text-xs uppercase tracking-wider shadow-sm flex items-center justify-center gap-2 transition-colors"
+                  >
+                    {isUpdatingAvatar ? (
+                      <>
+                        <RefreshCw className="h-3.5 w-3.5 animate-spin" />
+                        <span>Saving Photo...</span>
+                      </>
+                    ) : (
+                      <>
+                        <CheckCircle2 className="h-3.5 w-3.5" />
+                        <span>Save Photo</span>
+                      </>
+                    )}
+                  </button>
+                )}
               </div>
             </div>
 
             <div className="grid grid-cols-2 gap-2 text-xs">
               <div className="p-3 rounded-xl bg-[#F9FAFB] border border-[#E5E7EB]">
                 <p className="text-[10px] text-[#6B7280] uppercase font-bold">Assigned Team</p>
-                <p className="font-bold text-[#111827] mt-0.5">
+                <p className="font-bold text-[#111827] mt-0.5 truncate">
                   {lookup.team(selectedPlayerForView.teamId)?.name || "Unassigned"}
                 </p>
               </div>
@@ -3017,6 +3177,7 @@ function AdminPortalPage() {
                     try {
                       const updated = await playerRepository.updateRole(selectedPlayerForView.id, editingPlayerRole);
                       setSelectedPlayerForView(updated);
+                      queryClient.invalidateQueries({ queryKey: ["players"] });
                       await refetchPlayers();
                       broadcastTournamentUpdate();
                       setRoleUpdateSuccess(`Updated to ${editingPlayerRole}`);
@@ -3043,7 +3204,7 @@ function AdminPortalPage() {
 
             <button
               onClick={() => setSelectedPlayerForView(null)}
-              className="w-full py-3 rounded-xl bg-[#F3F4F6] text-[#111827] hover:bg-[#E5E7EB] font-bold text-xs uppercase mt-2"
+              className="w-full py-3 rounded-xl bg-[#F3F4F6] text-[#111827] hover:bg-[#E5E7EB] font-bold text-xs uppercase mt-1"
             >
               Close Profile
             </button>
