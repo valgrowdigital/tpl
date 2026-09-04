@@ -553,7 +553,7 @@ function ObsHandlerIndex() {
                         </div>
                         <div className="truncate">
                           <p className="text-xs font-black uppercase truncate">{p.name}</p>
-                          <p className="text-[9px] text-white/50">{p.role || "Batsman"}</p>
+                          <p className="text-[9px] text-white/50">{p.role || "Player"}</p>
                         </div>
                       </div>
 

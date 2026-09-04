@@ -171,6 +171,21 @@ function AdminPortalPage() {
   const [editingPlayerRole, setEditingPlayerRole] = useState<PlayerRole>("Batter");
   const [roleUpdateSuccess, setRoleUpdateSuccess] = useState<string | null>(null);
   const [isUpdatingRole, setIsUpdatingRole] = useState(false);
+  const [updatingPlayerRoleId, setUpdatingPlayerRoleId] = useState<string | null>(null);
+
+  const handleQuickRoleUpdate = async (playerId: string, newRole: PlayerRole) => {
+    setUpdatingPlayerRoleId(playerId);
+    try {
+      await playerRepository.updateRole(playerId, newRole);
+      queryClient.invalidateQueries({ queryKey: ["players"] });
+      await refetchPlayers();
+      broadcastTournamentUpdate();
+    } catch (err) {
+      console.error("[handleQuickRoleUpdate] error:", err);
+    } finally {
+      setUpdatingPlayerRoleId(null);
+    }
+  };
 
   // Player team assignment state
   const [editingPlayerTeamId, setEditingPlayerTeamId] = useState<string>("");
@@ -1445,9 +1460,31 @@ function AdminPortalPage() {
                               )}
                             </td>
                             <td className="px-4 py-3">
-                              <span className="px-2.5 py-1 rounded-full bg-[#F3F4F6] border border-[#E5E7EB] text-[10px] font-bold text-[#374151]">
-                                {p.role}
-                              </span>
+                              <div className="flex items-center gap-1.5">
+                                <select
+                                  value={p.role || "Batter"}
+                                  disabled={updatingPlayerRoleId === p.id}
+                                  onChange={(e) => handleQuickRoleUpdate(p.id, e.target.value as PlayerRole)}
+                                  className={`text-[10px] font-black uppercase tracking-wider rounded-lg px-2.5 py-1 border transition-colors cursor-pointer focus:outline-none focus:ring-2 focus:ring-[#D9A928]/40 ${
+                                    p.role === "All-rounder"
+                                      ? "bg-purple-50 text-purple-800 border-purple-200 hover:bg-purple-100"
+                                      : p.role === "Bowler"
+                                      ? "bg-blue-50 text-blue-800 border-blue-200 hover:bg-blue-100"
+                                      : p.role === "Wicketkeeper"
+                                      ? "bg-amber-50 text-amber-800 border-amber-200 hover:bg-amber-100"
+                                      : "bg-slate-50 text-slate-800 border-slate-200 hover:bg-slate-100"
+                                  }`}
+                                  title="Click to assign or change player role"
+                                >
+                                  <option value="Batter">Batter</option>
+                                  <option value="Bowler">Bowler</option>
+                                  <option value="All-rounder">All-rounder</option>
+                                  <option value="Wicketkeeper">Wicketkeeper</option>
+                                </select>
+                                {updatingPlayerRoleId === p.id && (
+                                  <RefreshCw className="h-3 w-3 animate-spin text-[#D9A928]" />
+                                )}
+                              </div>
                             </td>
                             <td className="px-4 py-3">
                               <span className="inline-flex items-center gap-1 text-[10px] font-black uppercase text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-md border border-emerald-200">

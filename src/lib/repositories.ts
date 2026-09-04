@@ -213,13 +213,34 @@ export function toPlayer(row: SupabaseRegistration): Player {
     } catch {}
   }
 
-  const rawRole = (row.player_role || "").toLowerCase();
+  const rawRole = (row.player_role || "").toLowerCase().trim();
   let role: PlayerRole = customRole || "Batter";
   
   if (!customRole) {
-    if (rawRole.includes("bowl")) role = "Bowler";
-    else if (rawRole.includes("keep")) role = "Wicketkeeper";
-    else role = "Batter"; // Strict default: NEVER automatic All-rounder
+    if (rawRole.includes("all") || rawRole.includes("round")) {
+      role = "All-rounder";
+    } else if (rawRole.includes("bowl")) {
+      role = "Bowler";
+    } else if (rawRole.includes("keep") || rawRole.includes("wk") || rawRole.includes("wicket")) {
+      role = "Wicketkeeper";
+    } else if (rawRole.includes("bat")) {
+      role = "Batter";
+    } else if (rawRole) {
+      if (rawRole === "all-rounder" || rawRole === "allrounder") role = "All-rounder";
+      else if (rawRole === "bowler") role = "Bowler";
+      else if (rawRole === "wicketkeeper") role = "Wicketkeeper";
+      else if (rawRole === "batter" || rawRole === "batsman") role = "Batter";
+      else role = "Batter";
+    } else {
+      const seed = SEED_PLAYERS.find(
+        (s) => s.id === row.id || s.name.toLowerCase() === (row.player_name || "").toLowerCase()
+      );
+      if (seed?.role && seed.role !== "Unspecified") {
+        role = seed.role;
+      } else {
+        role = "Batter";
+      }
+    }
   }
 
   return {
