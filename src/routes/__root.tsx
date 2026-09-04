@@ -8,6 +8,7 @@ import {
   Scripts,
 } from "@tanstack/react-router";
 import { useEffect, type ReactNode } from "react";
+import { usePrefetchCricketData } from "@/hooks/useCricketData";
 
 import appCss from "../styles.css?url";
 
@@ -125,6 +126,7 @@ function RootShell({ children }: { children: ReactNode }) {
 
 function RootComponent() {
   const { queryClient } = Route.useRouteContext();
+  usePrefetchCricketData();
 
   return (
     <QueryClientProvider client={queryClient}>
