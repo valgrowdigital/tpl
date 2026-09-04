@@ -114,11 +114,26 @@ function AdminPortalPage() {
   const [authError, setAuthError] = useState<string | null>(null);
 
   // Player view state
-  const [playerTab, setPlayerTab] = useState<"active" | "pending">("active");
+  const [playerTab, setPlayerTab] = useState<"all" | "assigned" | "unassigned">("all");
   const [playerSearch, setPlayerSearch] = useState("");
   const [roleFilter, setRoleFilter] = useState("all");
   const [teamFilter, setTeamFilter] = useState("all");
   const [selectedPlayerForView, setSelectedPlayerForView] = useState<Player | null>(null);
+
+  // Add New Player Modal state
+  const [showAddPlayerModal, setShowAddPlayerModal] = useState(false);
+  const [newPlayerName, setNewPlayerName] = useState("");
+  const [newPlayerRole, setNewPlayerRole] = useState<PlayerRole>("Batter");
+  const [newPlayerTeamId, setNewPlayerTeamId] = useState("");
+  const [newPlayerAvatar, setNewPlayerAvatar] = useState<string | null>(null);
+  const [newPlayerAvatarUrl, setNewPlayerAvatarUrl] = useState("");
+  const [newPlayerPhone, setNewPlayerPhone] = useState("");
+  const [newPlayerReferenceId, setNewPlayerReferenceId] = useState("");
+  const [newPlayerSoldPrice, setNewPlayerSoldPrice] = useState("");
+  const [isCreatingPlayer, setIsCreatingPlayer] = useState(false);
+  const [createPlayerError, setCreatePlayerError] = useState<string | null>(null);
+  const [createPlayerSuccess, setCreatePlayerSuccess] = useState<string | null>(null);
+  const newPlayerFileInputRef = useRef<HTMLInputElement>(null);
 
   // Tournament control modals
   const [showSingleMatchModal, setShowSingleMatchModal] = useState(false);
@@ -224,7 +239,8 @@ function AdminPortalPage() {
   // Filtered players (Unconditional Hook Call)
   const filteredPlayers = useMemo(() => {
     return players.filter((p) => {
-      if (playerTab === "active" && !p.name) return false;
+      if (playerTab === "assigned" && (!p.teamId || !p.teamId.trim())) return false;
+      if (playerTab === "unassigned" && Boolean(p.teamId && p.teamId.trim())) return false;
       if (playerSearch.trim()) {
         const q = playerSearch.toLowerCase();
         const matchesName = p.name.toLowerCase().includes(q);
@@ -233,7 +249,13 @@ function AdminPortalPage() {
         if (!matchesName && !matchesRef && !matchesTeam) return false;
       }
       if (roleFilter !== "all" && p.role !== roleFilter) return false;
-      if (teamFilter !== "all" && p.teamId !== teamFilter) return false;
+      if (teamFilter !== "all") {
+        if (teamFilter === "unassigned") {
+          if (p.teamId && p.teamId.trim()) return false;
+        } else if (p.teamId !== teamFilter) {
+          return false;
+        }
+      }
       return true;
     });
   }, [players, playerTab, playerSearch, roleFilter, teamFilter]);
@@ -446,6 +468,7 @@ function AdminPortalPage() {
       showResetAllModal ||
       showResetConfirm ||
       showKnockoutModal ||
+      showAddPlayerModal ||
       Boolean(selectedPlayerForView);
 
     if (!isAnyModalOpen) return;
@@ -1162,22 +1185,30 @@ function AdminPortalPage() {
           <div className="flex flex-col gap-5">
             {/* Player Controls Bar */}
             <div className="flex flex-wrap items-center justify-between gap-4 p-4 rounded-2xl bg-white border border-[#E5E7EB] shadow-sm">
-              <div className="flex rounded-xl bg-[#F3F4F6] p-1 border border-[#E5E7EB]">
+              <div className="flex flex-wrap rounded-xl bg-[#F3F4F6] p-1 border border-[#E5E7EB]">
                 <button
-                  onClick={() => setPlayerTab("active")}
-                  className={`px-4 py-2 rounded-lg text-xs font-black uppercase tracking-wider ${
-                    playerTab === "active" ? "bg-[#D9A928] text-[#111111]" : "text-[#6B7280] hover:text-[#111827]"
+                  onClick={() => setPlayerTab("all")}
+                  className={`px-3.5 py-2 rounded-lg text-xs font-black uppercase tracking-wider transition-all ${
+                    playerTab === "all" ? "bg-[#D9A928] text-[#111111] shadow-xs" : "text-[#6B7280] hover:text-[#111827]"
                   }`}
                 >
-                  Active Players ({players.length})
+                  All Players ({players.length})
                 </button>
                 <button
-                  onClick={() => setPlayerTab("pending")}
-                  className={`px-4 py-2 rounded-lg text-xs font-black uppercase tracking-wider ${
-                    playerTab === "pending" ? "bg-[#D9A928] text-[#111111]" : "text-[#6B7280] hover:text-[#111827]"
+                  onClick={() => setPlayerTab("assigned")}
+                  className={`px-3.5 py-2 rounded-lg text-xs font-black uppercase tracking-wider transition-all ${
+                    playerTab === "assigned" ? "bg-[#D9A928] text-[#111111] shadow-xs" : "text-[#6B7280] hover:text-[#111827]"
                   }`}
                 >
-                  Pending Queue (0)
+                  Assigned Squads ({players.filter((p) => Boolean(p.teamId && p.teamId.trim())).length})
+                </button>
+                <button
+                  onClick={() => setPlayerTab("unassigned")}
+                  className={`px-3.5 py-2 rounded-lg text-xs font-black uppercase tracking-wider transition-all ${
+                    playerTab === "unassigned" ? "bg-[#D9A928] text-[#111111] shadow-xs" : "text-[#6B7280] hover:text-[#111827]"
+                  }`}
+                >
+                  Unassigned Pool ({players.filter((p) => !p.teamId || !p.teamId.trim()).length})
                 </button>
               </div>
 
@@ -1199,7 +1230,7 @@ function AdminPortalPage() {
                   className="bg-[#F9FAFB] border border-[#D1D5DB] rounded-xl px-3 py-2 text-xs text-[#111827] focus:outline-none"
                 >
                   <option value="all">All Roles</option>
-                  <option value="Batsman">Batsman</option>
+                  <option value="Batter">Batter</option>
                   <option value="Bowler">Bowler</option>
                   <option value="All-rounder">All-rounder</option>
                   <option value="Wicketkeeper">Wicketkeeper</option>
@@ -1211,12 +1242,33 @@ function AdminPortalPage() {
                   className="bg-[#F9FAFB] border border-[#D1D5DB] rounded-xl px-3 py-2 text-xs text-[#111827] focus:outline-none"
                 >
                   <option value="all">All Teams</option>
+                  <option value="unassigned">Unassigned Pool Only</option>
                   {teams.map((t) => (
                     <option key={t.id} value={t.id}>
                       {t.name}
                     </option>
                   ))}
                 </select>
+
+                <button
+                  onClick={() => {
+                    setNewPlayerName("");
+                    setNewPlayerRole("Batter");
+                    setNewPlayerTeamId("");
+                    setNewPlayerAvatar(null);
+                    setNewPlayerAvatarUrl("");
+                    setNewPlayerPhone("");
+                    setNewPlayerReferenceId(`TPL-${String(players.length + 1).padStart(3, "0")}`);
+                    setNewPlayerSoldPrice("");
+                    setCreatePlayerError(null);
+                    setCreatePlayerSuccess(null);
+                    setShowAddPlayerModal(true);
+                  }}
+                  className="tap flex items-center gap-1.5 px-4 py-2 rounded-xl bg-[#D9A928] hover:bg-[#F4C542] text-[#111111] font-black text-xs uppercase shadow-sm transition-colors"
+                >
+                  <Plus className="h-4 w-4" />
+                  <span>Add Player</span>
+                </button>
               </div>
             </div>
 
@@ -1227,7 +1279,7 @@ function AdminPortalPage() {
                   <thead className="bg-[#F9FAFB] text-[10px] font-black uppercase tracking-wider text-[#4B5563] border-b border-[#E5E7EB]">
                     <tr>
                       <th className="px-4 py-3.5">PLAYER</th>
-                      <th className="px-4 py-3.5">TEAM</th>
+                      <th className="px-4 py-3.5">TEAM / STATUS</th>
                       <th className="px-4 py-3.5">PRIMARY ROLE</th>
                       <th className="px-4 py-3.5">PROFILE STATUS</th>
                       <th className="px-4 py-3.5">ATTENDANCE</th>
@@ -1235,64 +1287,100 @@ function AdminPortalPage() {
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-[#E5E7EB]">
-                    {filteredPlayers.map((p) => {
-                      const t = lookup.team(p.teamId);
-                      return (
-                        <tr key={p.id} className="hover:bg-[#F9FAFB] transition-colors">
-                          <td className="px-4 py-3">
-                            <div className="flex items-center gap-3">
-                              <div className="h-8 w-8 rounded-full bg-[#F3F4F6] border border-[#E5E7EB] overflow-hidden shrink-0 flex items-center justify-center font-bold text-xs text-[#9A6A05]">
-                                {p.avatar ? <img src={p.avatar} alt="" className="h-full w-full object-cover" /> : p.name[0]}
+                    {filteredPlayers.length === 0 ? (
+                      <tr>
+                        <td colSpan={6} className="px-4 py-8 text-center text-[#6B7280]">
+                          <p className="font-bold text-sm">No players match the selected filters.</p>
+                          <p className="text-[10px] mt-1">Try changing your search term or tab filter above.</p>
+                        </td>
+                      </tr>
+                    ) : (
+                      filteredPlayers.map((p) => {
+                        const t = lookup.team(p.teamId);
+                        const isUnassigned = !p.teamId || !p.teamId.trim();
+                        return (
+                          <tr key={p.id} className="hover:bg-[#F9FAFB] transition-colors">
+                            <td className="px-4 py-3">
+                              <div className="flex items-center gap-3">
+                                <div className="h-8 w-8 rounded-full bg-[#F3F4F6] border border-[#E5E7EB] overflow-hidden shrink-0 flex items-center justify-center font-bold text-xs text-[#9A6A05]">
+                                  {p.avatar ? <img src={p.avatar} alt="" className="h-full w-full object-cover" /> : p.name[0]}
+                                </div>
+                                <div>
+                                  <p className="font-black text-[#111827]">{p.name}</p>
+                                  <p className="text-[10px] text-[#6B7280]">{p.referenceId || `REF-${p.id.slice(0, 6)}`}</p>
+                                </div>
                               </div>
-                              <div>
-                                <p className="font-black text-[#111827]">{p.name}</p>
-                                <p className="text-[10px] text-[#6B7280]">{p.referenceId || `REF-${p.id.slice(0, 6)}`}</p>
+                            </td>
+                            <td className="px-4 py-3">
+                              {t ? (
+                                <span className="font-bold text-[#9A6A05] flex items-center gap-1.5">
+                                  <Shield className="h-3.5 w-3.5 text-[#9A6A05] shrink-0" />
+                                  <span>{t.shortName ?? t.name}</span>
+                                </span>
+                              ) : (
+                                <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-amber-50 border border-amber-200 text-[10px] font-black uppercase text-amber-800 tracking-wider">
+                                  Unassigned Pool
+                                </span>
+                              )}
+                            </td>
+                            <td className="px-4 py-3">
+                              <span className="px-2.5 py-1 rounded-full bg-[#F3F4F6] border border-[#E5E7EB] text-[10px] font-bold text-[#374151]">
+                                {p.role}
+                              </span>
+                            </td>
+                            <td className="px-4 py-3">
+                              <span className="inline-flex items-center gap-1 text-[10px] font-black uppercase text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-md border border-emerald-200">
+                                <CheckCircle2 className="h-3 w-3" />
+                                Verified
+                              </span>
+                            </td>
+                            <td className="px-4 py-3">
+                              <span className="text-[10px] font-bold text-[#4B5563]">Present</span>
+                            </td>
+                            <td className="px-4 py-3 text-right">
+                              <div className="flex items-center justify-end gap-2">
+                                {isUnassigned && (
+                                  <button
+                                    onClick={() => {
+                                      setSelectedPlayerForView(p);
+                                      setEditingPlayerRole((p.role as PlayerRole) || "Batter");
+                                      setRoleUpdateSuccess(null);
+                                      setEditingPlayerTeamId("");
+                                      setTeamUpdateSuccess(null);
+                                      setEditingPlayerAvatar(p.avatar || null);
+                                      setAvatarUpdateSuccess(null);
+                                      setAvatarUpdateError(null);
+                                      setAvatarInputUrl("");
+                                    }}
+                                    className="tap inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg bg-blue-50 hover:bg-blue-100 text-[#1E40AF] font-black text-[10px] uppercase tracking-wider border border-blue-200 transition-all"
+                                  >
+                                    <Shield className="h-3 w-3" />
+                                    <span>Assign Team</span>
+                                  </button>
+                                )}
+                                <button
+                                  onClick={() => {
+                                    setSelectedPlayerForView(p);
+                                    setEditingPlayerRole((p.role as PlayerRole) || "Batter");
+                                    setRoleUpdateSuccess(null);
+                                    setEditingPlayerTeamId(p.teamId || "");
+                                    setTeamUpdateSuccess(null);
+                                    setEditingPlayerAvatar(p.avatar || null);
+                                    setAvatarUpdateSuccess(null);
+                                    setAvatarUpdateError(null);
+                                    setAvatarInputUrl("");
+                                  }}
+                                  className="tap inline-flex items-center gap-1 px-3 py-1.5 rounded-lg bg-[#F3F4F6] hover:bg-[#D9A928] text-[#111827] hover:text-[#111111] font-black text-[10px] uppercase tracking-wider border border-[#E5E7EB] transition-all"
+                                >
+                                  <Eye className="h-3 w-3" />
+                                  <span>Profile</span>
+                                </button>
                               </div>
-                            </div>
-                          </td>
-                          <td className="px-4 py-3">
-                            {t ? (
-                              <span className="font-bold text-[#9A6A05]">{t.shortName ?? t.name}</span>
-                            ) : (
-                              <span className="text-[#9CA3AF] italic">Unassigned</span>
-                            )}
-                          </td>
-                          <td className="px-4 py-3">
-                            <span className="px-2.5 py-1 rounded-full bg-[#F3F4F6] border border-[#E5E7EB] text-[10px] font-bold text-[#374151]">
-                              {p.role}
-                            </span>
-                          </td>
-                          <td className="px-4 py-3">
-                            <span className="inline-flex items-center gap-1 text-[10px] font-black uppercase text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-md border border-emerald-200">
-                              <CheckCircle2 className="h-3 w-3" />
-                              Verified
-                            </span>
-                          </td>
-                          <td className="px-4 py-3">
-                            <span className="text-[10px] font-bold text-[#4B5563]">Present</span>
-                          </td>
-                          <td className="px-4 py-3 text-right">
-                            <button
-                              onClick={() => {
-                                setSelectedPlayerForView(p);
-                                setEditingPlayerRole((p.role as PlayerRole) || "Batter");
-                                setRoleUpdateSuccess(null);
-                                setEditingPlayerTeamId(p.teamId || "");
-                                setTeamUpdateSuccess(null);
-                                setEditingPlayerAvatar(p.avatar || null);
-                                setAvatarUpdateSuccess(null);
-                                setAvatarUpdateError(null);
-                                setAvatarInputUrl("");
-                              }}
-                              className="tap inline-flex items-center gap-1 px-3 py-1.5 rounded-lg bg-[#F3F4F6] hover:bg-[#D9A928] text-[#111827] hover:text-[#111111] font-black text-[10px] uppercase tracking-wider border border-[#E5E7EB] transition-all"
-                            >
-                              <Eye className="h-3 w-3" />
-                              <span>Profile</span>
-                            </button>
-                          </td>
-                        </tr>
-                      );
-                    })}
+                            </td>
+                          </tr>
+                        );
+                      })
+                    )}
                   </tbody>
                 </table>
               </div>
@@ -3277,6 +3365,274 @@ function AdminPortalPage() {
             >
               Close Profile
             </button>
+          </div>
+        </div>
+      )}
+
+      {/* ── ADD NEW PLAYER MODAL ────────────────────────────────────────── */}
+      {showAddPlayerModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
+          <div className="w-full max-w-lg bg-white border border-[#E5E7EB] rounded-3xl p-6 flex flex-col gap-4 shadow-2xl max-h-[90vh] overflow-y-auto">
+            <div className="flex items-center justify-between border-b border-[#E5E7EB] pb-3">
+              <div>
+                <h3 className="text-sm font-black uppercase text-[#9A6A05] flex items-center gap-1.5">
+                  <Plus className="h-4 w-4" />
+                  Add New Tournament Player
+                </h3>
+                <p className="text-[10px] text-[#6B7280] font-bold">Register new player to tournament directory or assign to squad</p>
+              </div>
+              <button
+                onClick={() => {
+                  if (!isCreatingPlayer) setShowAddPlayerModal(false);
+                }}
+                className="text-[#6B7280] hover:text-[#111827]"
+              >
+                <X className="h-5 w-5" />
+              </button>
+            </div>
+
+            {createPlayerSuccess && (
+              <div className="p-3 rounded-xl bg-emerald-50 border border-emerald-200 text-emerald-800 text-xs font-bold flex items-center gap-2">
+                <CheckCircle2 className="h-4 w-4 text-emerald-600 shrink-0" />
+                <p>{createPlayerSuccess}</p>
+              </div>
+            )}
+
+            {createPlayerError && (
+              <div className="p-3 rounded-xl bg-red-50 border border-red-200 text-red-700 text-xs font-bold flex items-center gap-2">
+                <AlertCircle className="h-4 w-4 text-red-600 shrink-0" />
+                <p>{createPlayerError}</p>
+              </div>
+            )}
+
+            {/* Form Fields */}
+            <div className="flex flex-col gap-3 text-xs">
+              {/* Name */}
+              <div>
+                <label className="text-[10px] font-bold text-[#4B5563] uppercase">
+                  Player Full Name <span className="text-red-500">*</span>
+                </label>
+                <input
+                  type="text"
+                  value={newPlayerName}
+                  onChange={(e) => setNewPlayerName(e.target.value)}
+                  placeholder="e.g. Mohamed Akeel"
+                  className="w-full mt-1 bg-[#F9FAFB] border border-[#D1D5DB] rounded-xl px-3 py-2.5 text-xs text-[#111827] font-bold focus:outline-none focus:border-[#D9A928] min-h-[44px]"
+                />
+              </div>
+
+              {/* Role & Team Grid */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div>
+                  <label className="text-[10px] font-bold text-[#4B5563] uppercase">Primary Playing Role</label>
+                  <select
+                    value={newPlayerRole}
+                    onChange={(e) => setNewPlayerRole(e.target.value as PlayerRole)}
+                    className="w-full mt-1 bg-[#F9FAFB] border border-[#D1D5DB] rounded-xl px-3 py-2 text-xs font-bold text-[#111827] focus:outline-none min-h-[44px]"
+                  >
+                    <option value="Batter">Batter</option>
+                    <option value="Bowler">Bowler</option>
+                    <option value="All-rounder">All-rounder</option>
+                    <option value="Wicketkeeper">Wicketkeeper</option>
+                  </select>
+                </div>
+
+                <div>
+                  <label className="text-[10px] font-bold text-[#4B5563] uppercase">Initial Team Assignment</label>
+                  <select
+                    value={newPlayerTeamId}
+                    onChange={(e) => setNewPlayerTeamId(e.target.value)}
+                    className="w-full mt-1 bg-[#F9FAFB] border border-[#D1D5DB] rounded-xl px-3 py-2 text-xs font-bold text-[#111827] focus:outline-none min-h-[44px]"
+                  >
+                    <option value="">Unassigned Pool / Free Agent</option>
+                    {teams.map((t) => (
+                      <option key={t.id} value={t.id}>
+                        {t.name} ({t.shortName || t.groupName || "Team"})
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              </div>
+
+              {/* Reference ID & Phone */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div>
+                  <label className="text-[10px] font-bold text-[#4B5563] uppercase">Reference ID</label>
+                  <input
+                    type="text"
+                    value={newPlayerReferenceId}
+                    onChange={(e) => setNewPlayerReferenceId(e.target.value)}
+                    placeholder="e.g. TPL-090"
+                    className="w-full mt-1 bg-[#F9FAFB] border border-[#D1D5DB] rounded-xl px-3 py-2 text-xs font-mono text-[#111827] min-h-[44px]"
+                  />
+                </div>
+
+                <div>
+                  <label className="text-[10px] font-bold text-[#4B5563] uppercase">Phone / Contact (Optional)</label>
+                  <input
+                    type="tel"
+                    value={newPlayerPhone}
+                    onChange={(e) => setNewPlayerPhone(e.target.value)}
+                    placeholder="e.g. +94 77 123 4567"
+                    className="w-full mt-1 bg-[#F9FAFB] border border-[#D1D5DB] rounded-xl px-3 py-2 text-xs text-[#111827] min-h-[44px]"
+                  />
+                </div>
+              </div>
+
+              {/* Sold Price */}
+              <div>
+                <label className="text-[10px] font-bold text-[#4B5563] uppercase">Auction Sold Price (LKR, Optional)</label>
+                <input
+                  type="number"
+                  min="0"
+                  value={newPlayerSoldPrice}
+                  onChange={(e) => setNewPlayerSoldPrice(e.target.value)}
+                  placeholder="e.g. 5000"
+                  className="w-full mt-1 bg-[#F9FAFB] border border-[#D1D5DB] rounded-xl px-3 py-2 text-xs text-[#111827] min-h-[44px]"
+                />
+              </div>
+
+              {/* Photo Upload & Preview Section */}
+              <div className="p-3.5 rounded-2xl bg-[#F0FDF4] border border-[#BBF7D0] flex flex-col gap-2.5">
+                <span className="text-[10px] font-black uppercase text-[#166534] tracking-wider flex items-center gap-1.5">
+                  <Camera className="h-3.5 w-3.5 text-emerald-600" />
+                  Player Profile Photo (Optional)
+                </span>
+
+                <input
+                  type="file"
+                  ref={newPlayerFileInputRef}
+                  accept="image/*"
+                  className="hidden"
+                  onChange={async (e) => {
+                    const file = e.target.files?.[0];
+                    if (!file) return;
+                    try {
+                      const dataUrl = await resizeImageToDataUrl(file, 400);
+                      setNewPlayerAvatar(dataUrl);
+                    } catch {
+                      setCreatePlayerError("Failed to process image. Please try another image.");
+                    }
+                  }}
+                />
+
+                <div className="flex items-center gap-3">
+                  <div className="h-12 w-12 rounded-xl bg-white border border-[#E5E7EB] flex items-center justify-center font-black text-lg text-[#9A6A05] overflow-hidden shrink-0 shadow-xs">
+                    {newPlayerAvatar ? (
+                      <img src={newPlayerAvatar} alt="" className="h-full w-full object-cover" />
+                    ) : (
+                      <ImageIcon className="h-5 w-5 text-[#9CA3AF]" />
+                    )}
+                  </div>
+
+                  <div className="flex flex-1 gap-2">
+                    <button
+                      type="button"
+                      onClick={() => newPlayerFileInputRef.current?.click()}
+                      className="tap flex-1 py-2 px-3 rounded-xl bg-white border border-[#86EFAC] text-emerald-900 hover:bg-emerald-50 text-xs font-black uppercase tracking-wider flex items-center justify-center gap-1.5 shadow-xs"
+                    >
+                      <Upload className="h-3.5 w-3.5 text-emerald-600" />
+                      <span>Upload</span>
+                    </button>
+                    {newPlayerAvatar && (
+                      <button
+                        type="button"
+                        onClick={() => setNewPlayerAvatar(null)}
+                        className="tap py-2 px-3 rounded-xl bg-white border border-[#D1D5DB] text-red-600 hover:bg-red-50 text-xs font-black uppercase"
+                      >
+                        Clear
+                      </button>
+                    )}
+                  </div>
+                </div>
+
+                <div className="flex items-center gap-1.5 mt-1">
+                  <input
+                    type="url"
+                    value={newPlayerAvatarUrl}
+                    onChange={(e) => setNewPlayerAvatarUrl(e.target.value)}
+                    placeholder="Or paste photo URL..."
+                    className="flex-1 bg-white border border-[#D1D5DB] rounded-xl px-3 py-1.5 text-xs text-[#111827] placeholder:text-[#9CA3AF] focus:outline-none"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => {
+                      if (newPlayerAvatarUrl.trim()) {
+                        setNewPlayerAvatar(newPlayerAvatarUrl.trim());
+                        setNewPlayerAvatarUrl("");
+                      }
+                    }}
+                    disabled={!newPlayerAvatarUrl.trim()}
+                    className="tap px-3 py-1.5 bg-[#111827] text-white rounded-xl text-xs font-black uppercase disabled:opacity-40"
+                  >
+                    Set URL
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            {/* Modal Footer */}
+            <div className="grid grid-cols-2 gap-3 pt-3 border-t border-[#E5E7EB]">
+              <button
+                type="button"
+                onClick={() => setShowAddPlayerModal(false)}
+                disabled={isCreatingPlayer}
+                className="py-3 rounded-xl bg-[#F3F4F6] text-[#111827] hover:bg-[#E5E7EB] font-bold text-xs uppercase"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={async () => {
+                  if (!newPlayerName.trim()) {
+                    setCreatePlayerError("Player name is required.");
+                    return;
+                  }
+                  setIsCreatingPlayer(true);
+                  setCreatePlayerError(null);
+                  setCreatePlayerSuccess(null);
+
+                  try {
+                    const created = await playerRepository.createPlayer({
+                      name: newPlayerName.trim(),
+                      role: newPlayerRole,
+                      teamId: newPlayerTeamId || null,
+                      avatar: newPlayerAvatar || null,
+                      phone: newPlayerPhone.trim() || null,
+                      referenceId: newPlayerReferenceId.trim() || null,
+                      soldPrice: newPlayerSoldPrice ? Number(newPlayerSoldPrice) : null,
+                    });
+
+                    queryClient.invalidateQueries({ queryKey: ["players"] });
+                    await refetchPlayers();
+                    broadcastTournamentUpdate();
+                    setCreatePlayerSuccess(`Player "${created.name}" created successfully!`);
+                    setTimeout(() => {
+                      setShowAddPlayerModal(false);
+                    }, 1200);
+                  } catch (err: any) {
+                    console.error("[handleAddPlayerSubmit] error:", err);
+                    setCreatePlayerError(err?.message || "Failed to create player.");
+                  } finally {
+                    setIsCreatingPlayer(false);
+                  }
+                }}
+                disabled={isCreatingPlayer || !newPlayerName.trim()}
+                className="py-3 rounded-xl bg-[#D9A928] hover:bg-[#F4C542] disabled:opacity-50 text-[#111111] font-black text-xs uppercase shadow-sm flex items-center justify-center gap-2"
+              >
+                {isCreatingPlayer ? (
+                  <>
+                    <RefreshCw className="h-3.5 w-3.5 animate-spin" />
+                    <span>Adding Player...</span>
+                  </>
+                ) : (
+                  <>
+                    <CheckCircle2 className="h-3.5 w-3.5" />
+                    <span>Create Player</span>
+                  </>
+                )}
+              </button>
+            </div>
           </div>
         </div>
       )}

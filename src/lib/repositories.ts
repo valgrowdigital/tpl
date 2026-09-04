@@ -393,6 +393,19 @@ class LookupCache {
     return undefined;
   }
 
+  upsertPlayer(player: Player): Player {
+    this.playersMap.set(player.id, player);
+    if (typeof window !== "undefined") {
+      try {
+        window.localStorage.setItem(
+          CACHE_PLAYERS_KEY,
+          JSON.stringify(Array.from(this.playersMap.values())),
+        );
+      } catch {}
+    }
+    return player;
+  }
+
   playersOf(teamIdOrSlug: string): Player[] {
     if (!teamIdOrSlug || teamIdOrSlug.trim() === "") return [];
     const resolvedTeam = this.team(teamIdOrSlug);
@@ -467,6 +480,16 @@ export interface TeamRepository {
   get(id: string): Promise<Team | undefined>;
 }
 
+export interface CreatePlayerInput {
+  name: string;
+  role?: PlayerRole;
+  teamId?: string | null;
+  avatar?: string | null;
+  phone?: string | null;
+  referenceId?: string | null;
+  soldPrice?: number | null;
+}
+
 export interface PlayerRepository {
   list(): Promise<Player[]>;
   listByTeam(teamId: string): Promise<Player[]>;
@@ -475,6 +498,7 @@ export interface PlayerRepository {
   updateRole(playerId: string, role: PlayerRole): Promise<Player>;
   updateAvatar(playerId: string, avatarUrl: string): Promise<Player>;
   updateTeam(playerId: string, teamId: string | null): Promise<Player>;
+  createPlayer(input: CreatePlayerInput): Promise<Player>;
 }
 
 
@@ -730,6 +754,63 @@ export class SupabasePlayerRepository implements PlayerRepository {
     const result = updated || (await this.get(playerId));
     if (!result) throw new Error(`Player ${playerId} not found`);
     return result;
+  }
+
+  async createPlayer(input: CreatePlayerInput): Promise<Player> {
+    const id = typeof crypto !== "undefined" && crypto.randomUUID ? crypto.randomUUID() : `player-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`;
+    const slug = input.name.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "");
+    const role: PlayerRole = input.role || "Batter";
+    const teamId = input.teamId || "";
+    const referenceId = input.referenceId || `TPL-${String(lookup.players().length + 1).padStart(3, "0")}`;
+
+    const newPlayer: Player = {
+      id,
+      name: input.name.trim(),
+      shortName: derivePlayerShortName(input.name.trim()),
+      role,
+      teamId,
+      avatar: input.avatar || undefined,
+      phone: input.phone || undefined,
+      referenceId,
+      slug,
+      soldPrice: input.soldPrice || undefined,
+      auctionStatus: "AVAILABLE",
+    };
+
+    lookup.upsertPlayer(newPlayer);
+
+    if (isSupabaseConfigured) {
+      try {
+        const insertPayload: any = {
+          id,
+          player_name: input.name.trim(),
+          player_role: role,
+          team_id: teamId || null,
+          profile_photo_url: input.avatar || null,
+          reference_id: referenceId,
+          slug,
+          player_phone: input.phone || null,
+          sold_price: input.soldPrice || null,
+          status: "APPROVED",
+        };
+
+        const { data, error } = await withTimeout(
+          supabase.from("registrations").insert(insertPayload).select().single(),
+          REQUEST_TIMEOUT_MS,
+          "Create player timed out",
+        );
+
+        if (!error && data) {
+          const created = toPlayer(data as SupabaseRegistration);
+          lookup.upsertPlayer(created);
+          return created;
+        }
+      } catch (err) {
+        console.warn("[createPlayer] Supabase insert warning:", err);
+      }
+    }
+
+    return newPlayer;
   }
 }
 
