@@ -2,7 +2,7 @@ import { motion } from "framer-motion";
 import { useMatchStore } from "@/lib/scoring/store";
 import { usePlayers, useTeams, useMatches } from "@/hooks/useCricketData";
 import { TeamLogo } from "@/components/team/TeamLogo";
-import { lookup } from "@/lib/repositories";
+import { lookup, isPlayerInTeam } from "@/lib/repositories";
 import { Logo } from "@/components/brand/Logo";
 
 // Authoritative team logo mappings for all TPL teams
@@ -61,16 +61,25 @@ export function TeamSquadsGraphic({ matchId, transitionType = "fade" }: { matchI
 
   const resolvePlayer = (id: string) => lookup.player(id) || players.find(p => p.id === id);
 
-  const teamAFallback = players.filter(p => p.teamId === match.teamAId || (teamA?.id && p.teamId === teamA.id));
-  const teamBFallback = players.filter(p => p.teamId === match.teamBId || (teamB?.id && p.teamId === teamB.id));
+  const teamAFallback = teamA 
+    ? (players.filter(p => isPlayerInTeam(p, teamA)).length > 0 
+        ? players.filter(p => isPlayerInTeam(p, teamA)) 
+        : lookup.players().filter(p => isPlayerInTeam(p, teamA))) 
+    : [];
+
+  const teamBFallback = teamB 
+    ? (players.filter(p => isPlayerInTeam(p, teamB)).length > 0 
+        ? players.filter(p => isPlayerInTeam(p, teamB)) 
+        : lookup.players().filter(p => isPlayerInTeam(p, teamB))) 
+    : [];
 
   const teamAFull = (teamAPlayers.length > 0)
-    ? teamAPlayers.map(resolvePlayer).filter(Boolean)
-    : (teamAFallback.length > 0 ? teamAFallback : lookup.allPlayers().slice(0, 11));
+    ? (teamAPlayers.map(resolvePlayer).filter(Boolean) as any[])
+    : teamAFallback;
 
   const teamBFull = (teamBPlayers.length > 0)
-    ? teamBPlayers.map(resolvePlayer).filter(Boolean)
-    : (teamBFallback.length > 0 ? teamBFallback : lookup.allPlayers().slice(11, 22));
+    ? (teamBPlayers.map(resolvePlayer).filter(Boolean) as any[])
+    : teamBFallback;
 
   const variants = {
     initial: transitionType === "slide" ? { y: "100%" } : { opacity: 0 },
