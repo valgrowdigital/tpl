@@ -518,6 +518,10 @@ class LookupCache {
     return this.matches();
   }
 
+  allMatches(): Match[] {
+    return this.matches();
+  }
+
   teams(): Team[] {
     return Array.from(this.teamsMap.values());
   }
@@ -526,11 +530,19 @@ class LookupCache {
     return this.teams();
   }
 
+  allTeams(): Team[] {
+    return this.teams();
+  }
+
   players(): Player[] {
     return Array.from(this.playersMap.values());
   }
 
   getAllPlayers(): Player[] {
+    return this.players();
+  }
+
+  allPlayers(): Player[] {
     return this.players();
   }
 

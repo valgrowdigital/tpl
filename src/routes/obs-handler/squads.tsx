@@ -23,7 +23,7 @@ function ObsSquadsPage() {
   const activeMatch = matches.find((m) => m.id === selectedMatchId) 
     || matches.find((m) => m.status === "LIVE") 
     || matches[0] 
-    || lookup.allMatches()[0];
+    || lookup.matches()[0];
 
   const { activeGraphic, setGraphic, clearGraphic } = useObsHandlerMaster(activeMatch?.id);
 
