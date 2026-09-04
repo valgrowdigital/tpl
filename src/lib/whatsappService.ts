@@ -1,3 +1,5 @@
+import type { Match } from "@/types/cricket";
+
 const WA_SETTINGS_KEY = "tpl_whatsapp_settings";
 const WA_SENT_EVENTS_KEY = "tpl_whatsapp_sent_events";
 
@@ -22,7 +24,7 @@ export const whatsappSettingsRepository = {
   saveSettings(settings: WhatsAppSettings): void {
     if (typeof window === "undefined") return;
     window.localStorage.setItem(WA_SETTINGS_KEY, JSON.stringify(settings));
-  }
+  },
 };
 
 export const whatsappCacheRepository = {
@@ -47,7 +49,7 @@ export const whatsappCacheRepository = {
         window.localStorage.setItem(WA_SENT_EVENTS_KEY, JSON.stringify(events));
       }
     } catch {}
-  }
+  },
 };
 
 /**
@@ -60,6 +62,87 @@ export function openWhatsAppShare(message: string, phone?: string): void {
     ? `https://api.whatsapp.com/send?phone=${encodeURIComponent(phone)}&text=${encoded}`
     : `https://api.whatsapp.com/send?text=${encoded}`;
   window.open(targetUrl, "_blank", "noopener,noreferrer");
+}
+
+/**
+ * Constructs clean official WhatsApp broadcast text.
+ * Strictly includes Public Home Score Card and OBS Live Stream links ONLY.
+ * NEVER exposes internal Scorer console URL or PIN.
+ */
+export function buildMatchWhatsAppMessage(
+  match: Match,
+  options?: {
+    teamAName?: string;
+    teamBName?: string;
+    timeFormatted?: string;
+    numSymbol?: string;
+    winnerLine?: string;
+    potmText?: string;
+    origin?: string;
+  }
+): string {
+  const origin = options?.origin || (typeof window !== "undefined" ? window.location.origin : "https://tpl.valgrowlabs.com");
+  const numSymbol = options?.numSymbol || `#${match.matchNumber}`;
+  const teamAName = options?.teamAName || "Team A";
+  const teamBName = options?.teamBName || "Team B";
+  const time = options?.timeFormatted || "Scheduled Time";
+  const venue = match.venue || "TPL Cricket Ground";
+
+  if (match.status === "LIVE") {
+    return [
+      "🔴 TPL 2026 LIVE NOW",
+      "",
+      `Match ${numSymbol}`,
+      `${teamAName} vs ${teamBName}`,
+      "",
+      `⚡ ${match.overs} Overs Match`,
+      `📍 Venue: ${venue}`,
+      "",
+      "📊 Live Scorecard:",
+      `${origin}/home`,
+      "",
+      "📺 OBS Live Broadcast:",
+      `${origin}/obs/live`,
+    ].join("\n");
+  }
+
+  if (match.status === "COMPLETED") {
+    const winnerLine = options?.winnerLine || match.resultText || "MATCH COMPLETED";
+    const potm = options?.potmText ? `${options.potmText}\n` : "";
+    return [
+      "🏆 TPL 2026 — MATCH RESULT",
+      "",
+      `Match ${numSymbol}`,
+      `${teamAName} vs ${teamBName}`,
+      "",
+      `🏆 Result: ${winnerLine}`,
+      "",
+      potm,
+      "📊 Full Scorecard:",
+      `${origin}/home`,
+      "",
+      "📺 OBS Broadcast:",
+      `${origin}/obs/live`,
+    ].join("\n");
+  }
+
+  // Scheduled / Upcoming Match
+  return [
+    "🏏 TPL 2026 — Match Scheduled",
+    "",
+    `Match ${numSymbol}`,
+    `${teamAName} vs ${teamBName}`,
+    "",
+    `⏰ Time: ${time}`,
+    `📍 Venue: ${venue}`,
+    `⚡ Overs: ${match.overs}`,
+    "",
+    "📊 Live Scorecard:",
+    `${origin}/home`,
+    "",
+    "📺 OBS Live Broadcast:",
+    `${origin}/obs/live`,
+  ].join("\n");
 }
 
 /**
@@ -113,4 +196,41 @@ export async function sendWhatsAppNotification(
   openWhatsAppShare(message);
   whatsappCacheRepository.markSent(eventId);
   return { success: true, method: "direct" };
+}
+
+/**
+ * Automatically triggers WhatsApp match live notification when a match starts.
+ */
+export async function notifyAutoMatchLive(matchId: string): Promise<void> {
+  if (typeof window === "undefined" || !matchId) return;
+  const eventId = `match-auto-live-${matchId}`;
+  if (whatsappCacheRepository.hasSent(eventId)) return;
+
+  try {
+    const { lookup } = await import("@/lib/repositories");
+    const m = lookup.match(matchId);
+    if (!m) return;
+
+    const teamA = lookup.team(m.teamAId);
+    const teamB = lookup.team(m.teamBId);
+    const teamAName = teamA?.name || "Team 1";
+    const teamBName = teamB?.name || "Team 2";
+    const numSymbol = `#${String(m.matchNumber).padStart(2, "0")}`;
+
+    const message = buildMatchWhatsAppMessage(
+      { ...m, status: "LIVE" },
+      {
+        teamAName,
+        teamBName,
+        numSymbol,
+      }
+    );
+
+    const settings = whatsappSettingsRepository.getSettings();
+    if (settings && settings.serverUrl && settings.apiKey && settings.targetChatId) {
+      await sendWhatsAppNotification(eventId, message);
+    }
+  } catch (err) {
+    console.warn("[notifyAutoMatchLive] notice:", err);
+  }
 }

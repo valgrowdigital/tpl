@@ -125,6 +125,13 @@ export function startMatchSession(matchId: string) {
     console.warn("[startMatchSession] DB status update notice:", err);
   });
 
+  // 1b. Automatically trigger WhatsApp broadcast notification if active
+  try {
+    import("@/lib/whatsappService").then((mod) => {
+      mod.notifyAutoMatchLive(matchId);
+    }).catch(() => {});
+  } catch {}
+
   // 2. Broadcast to other tabs & windows
   try {
     const bc = new BroadcastChannel(`tpl_match_${matchId}`);
@@ -517,6 +524,12 @@ export function useMatchStore(matchId: string, initialMatch?: Match) {
           .catch((err) => {
             console.warn("[updateSetup] toss persist notice:", err);
           });
+
+        try {
+          import("@/lib/whatsappService").then((mod) => {
+            mod.notifyAutoMatchLive(matchId);
+          }).catch(() => {});
+        } catch {}
       }
 
       // If match overs are reduced/revised, authoritatively persist total_overs to matches table

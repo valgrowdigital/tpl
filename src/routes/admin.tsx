@@ -1731,31 +1731,25 @@ function AdminPortalPage() {
                                   const mod = await import("@/lib/whatsappService");
                                   const teamAName = teamA?.name || "Team A";
                                   const teamBName = teamB?.name || "Team B";
-                                  
                                   const eventId = `match-${m.id}-${m.status}`;
-                                  let message = "";
-                                  const origin = window.location.origin;
-
-                                  if (m.status === "UPCOMING" || m.status === "READY") {
-                                    message = `TPL 2026 — Match Scheduled\n\nMatch ${numSymbol}\n${teamAName} vs ${teamBName}\n\nDate: ${time}\nVenue: ${m.venue || 'TPL Cricket Ground'}\nOvers: ${m.overs}\n\nScorer PIN: ${m.scorerPin || '----'}\n\nScorer:\n${origin}/match/${m.id}\n\nOBS:\n${origin}/obs/match/${m.id}`;
-                                  } else if (m.status === "LIVE") {
-                                    message = `🔴 TPL 2026 LIVE\n\nMatch ${numSymbol}\n${teamAName} vs ${teamBName}\n\nMatch is now LIVE.\n\nLive Score:\n${origin}/match/${m.id}\n\nOBS Broadcast:\n${origin}/obs/match/${m.id}`;
-                                  } else if (m.status === "COMPLETED") {
-                                    // Construct completed message
-                                    let winnerLine = m.resultText || "MATCH COMPLETED";
-                                    let potmText = "";
-                                    if (m.manOfTheMatchId) {
-                                      const potm = players.find(p => p.id === m.manOfTheMatchId);
-                                      if (potm) {
-                                        const slug = potm.slug || potm.name.toLowerCase().replace(/[^a-z0-9]+/g, "-");
-                                        potmText = `Player of the Match:\n${potm.name}\n${origin}/player/${slug}\n\n`;
-                                      }
+                                  
+                                  let potmText = "";
+                                  if (m.manOfTheMatchId) {
+                                    const potm = players.find(p => p.id === m.manOfTheMatchId);
+                                    if (potm) {
+                                      potmText = `🌟 Player of the Match: ${potm.name}`;
                                     }
-                                    
-                                    message = `🏆 TPL 2026 — MATCH RESULT\n\nMatch ${numSymbol}\n\n${teamAName}\nvs\n${teamBName}\n\n🏆 WINNER\n${winnerLine}\n\n${potmText}Scorecard:\n${origin}/match/${m.id}\n\nOBS:\n${origin}/obs/match/${m.id}`;
-                                  } else {
-                                    message = `TPL 2026 Match ${numSymbol}: ${teamAName} vs ${teamBName}`;
                                   }
+
+                                  const message = mod.buildMatchWhatsAppMessage(m, {
+                                    teamAName,
+                                    teamBName,
+                                    timeFormatted: time,
+                                    numSymbol,
+                                    winnerLine: m.resultText || "MATCH COMPLETED",
+                                    potmText,
+                                    origin: window.location.origin,
+                                  });
 
                                   const res = await mod.sendWhatsAppNotification(eventId, message);
                                   const successMsg = res.method === "api" ? "✓ WhatsApp notification sent" : "✓ WhatsApp opened with match details";
