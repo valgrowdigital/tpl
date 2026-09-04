@@ -541,8 +541,8 @@ export function useObsMatchEvents(stream: ObsMatchStreamResult) {
         }
       };
 
-      checkBatterEntry(currentInnings.strikerId);
-      checkBatterEntry(currentInnings.nonStrikerId);
+      checkBatterEntry(stream.striker?.id || currentInnings.strikerId);
+      checkBatterEntry(stream.nonStriker?.id || currentInnings.nonStrikerId);
     }
 
     // ── 7. PARTNERSHIP MILESTONE DETECTION (30, 50, 75, 100, 150 runs) ──────

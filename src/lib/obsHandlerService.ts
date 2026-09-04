@@ -35,6 +35,39 @@ export interface ObsCommand {
 const getChannelName = (matchId: string) => `obs-handler:${matchId}`;
 const generateCommandId = () => Math.random().toString(36).substring(2, 15) + Math.random().toString(36).substring(2, 15);
 
+// Persistent Supabase Realtime channel pool to eliminate WebSocket handshake latency
+const persistentRealtimeChannels = new Map<string, any>();
+
+function getOrCreatePersistentChannel(channelName: string) {
+  if (!isSupabaseConfigured) return null;
+  let ch = persistentRealtimeChannels.get(channelName);
+  if (!ch) {
+    ch = supabase.channel(channelName, {
+      config: { broadcast: { self: false } },
+    });
+    ch.subscribe((status: string) => {
+      if (status === "CHANNEL_ERROR" || status === "TIMED_OUT" || status === "CLOSED") {
+        persistentRealtimeChannels.delete(channelName);
+      }
+    });
+    persistentRealtimeChannels.set(channelName, ch);
+  }
+  return ch;
+}
+
+function broadcastOverRealtime(channelName: string, event: string, payload: any) {
+  const ch = getOrCreatePersistentChannel(channelName);
+  if (ch) {
+    try {
+      ch.send({
+        type: "broadcast",
+        event,
+        payload,
+      });
+    } catch {}
+  }
+}
+
 export const obsHandlerService = {
   // Sets global active broadcast match
   setActiveMatch(matchId: string, source: "SCORER" | "OBS_HANDLER" | "SYSTEM" = "OBS_HANDLER") {
@@ -66,21 +99,8 @@ export const obsHandlerService = {
       } catch {}
     }
 
-    if (isSupabaseConfigured) {
-      const channel = supabase.channel("obs-handler-global", {
-        config: { broadcast: { self: false } },
-      });
-      channel.subscribe((status) => {
-        if (status === "SUBSCRIBED") {
-          channel.send({
-            type: "broadcast",
-            event: "switch_match",
-            payload: { matchId },
-          });
-          setTimeout(() => supabase.removeChannel(channel), 1000);
-        }
-      });
-    }
+    // 3. Zero-delay Supabase Realtime dispatch
+    broadcastOverRealtime("obs-handler-global", "switch_match", { matchId });
   },
 
   getActiveMatch(): string | null {
@@ -142,36 +162,9 @@ export const obsHandlerService = {
       }
     }
 
-    // 2. Supabase Realtime (Remote fallback)
-    if (isSupabaseConfigured) {
-      const channel = supabase.channel(getChannelName(matchId), {
-        config: { broadcast: { self: false } },
-      });
-      channel.subscribe((status) => {
-        if (status === "SUBSCRIBED") {
-          channel.send({
-            type: "broadcast",
-            event: "obs_command",
-            payload: command,
-          });
-          setTimeout(() => supabase.removeChannel(channel), 1500);
-        }
-      });
-
-      const globalChannel = supabase.channel("obs-handler-global", {
-        config: { broadcast: { self: false } },
-      });
-      globalChannel.subscribe((status) => {
-        if (status === "SUBSCRIBED") {
-          globalChannel.send({
-            type: "broadcast",
-            event: "obs_command",
-            payload: command,
-          });
-          setTimeout(() => supabase.removeChannel(globalChannel), 1500);
-        }
-      });
-    }
+    // 2. Zero-delay Realtime broadcast
+    broadcastOverRealtime(getChannelName(matchId), "obs_command", command);
+    broadcastOverRealtime("obs-handler-global", "obs_command", command);
   },
 
   // Broadcaster (Handler or Scorer) clears overriding graphics
@@ -208,35 +201,9 @@ export const obsHandlerService = {
       } catch {}
     }
 
-    if (isSupabaseConfigured) {
-      const channel = supabase.channel(getChannelName(matchId), {
-        config: { broadcast: { self: false } },
-      });
-      channel.subscribe((status) => {
-        if (status === "SUBSCRIBED") {
-          channel.send({
-            type: "broadcast",
-            event: "obs_command",
-            payload: command,
-          });
-          setTimeout(() => supabase.removeChannel(channel), 1500);
-        }
-      });
-
-      const globalChannel = supabase.channel("obs-handler-global", {
-        config: { broadcast: { self: false } },
-      });
-      globalChannel.subscribe((status) => {
-        if (status === "SUBSCRIBED") {
-          globalChannel.send({
-            type: "broadcast",
-            event: "obs_command",
-            payload: command,
-          });
-          setTimeout(() => supabase.removeChannel(globalChannel), 1500);
-        }
-      });
-    }
+    // 2. Zero-delay Realtime broadcast
+    broadcastOverRealtime(getChannelName(matchId), "obs_command", command);
+    broadcastOverRealtime("obs-handler-global", "obs_command", command);
   },
 
   setStreamUrl(streamUrl: string, matchId?: string) {
@@ -284,21 +251,7 @@ export const obsHandlerService = {
       bc.close();
     }
     
-    if (isSupabaseConfigured) {
-      const channel = supabase.channel(getChannelName(matchId), {
-        config: { broadcast: { self: false } },
-      });
-      channel.subscribe((status) => {
-        if (status === "SUBSCRIBED") {
-          channel.send({
-            type: "broadcast",
-            event: "obs_command",
-            payload: command,
-          });
-          supabase.removeChannel(channel);
-        }
-      });
-    }
+    broadcastOverRealtime(getChannelName(matchId), "obs_command", command);
   },
 
   // Broadcaster responds to sync
@@ -317,20 +270,6 @@ export const obsHandlerService = {
       bc.close();
     }
     
-    if (isSupabaseConfigured) {
-      const channel = supabase.channel(getChannelName(matchId), {
-        config: { broadcast: { self: false } },
-      });
-      channel.subscribe((status) => {
-        if (status === "SUBSCRIBED") {
-          channel.send({
-            type: "broadcast",
-            event: "obs_command",
-            payload: command,
-          });
-          supabase.removeChannel(channel);
-        }
-      });
-    }
+    broadcastOverRealtime(getChannelName(matchId), "obs_command", command);
   }
 };

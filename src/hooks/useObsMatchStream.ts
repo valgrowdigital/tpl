@@ -124,43 +124,68 @@ export function useObsMatchStream(matchId: string): ObsMatchStreamResult {
     return lookup.team(currentInnings.bowlingTeamId) ?? teams.find((t) => t.id === currentInnings.bowlingTeamId);
   }, [currentInnings?.bowlingTeamId, match, teams]);
 
+  const activeStrikerId = useMemo(() => {
+    return (
+      currentInnings?.strikerId ||
+      store.activeStrikerId ||
+      store.doc?.pendingBatterIds?.[currentInnings?.index ?? 0]?.strikerId ||
+      (currentInnings?.index === 1
+        ? store.doc?.secondInningsOpeners?.strikerId || store.doc?.setup?.openers?.strikerId
+        : store.doc?.setup?.openers?.strikerId)
+    );
+  }, [currentInnings?.strikerId, currentInnings?.index, store.doc, store.activeStrikerId]);
+
+  const activeNonStrikerId = useMemo(() => {
+    return (
+      currentInnings?.nonStrikerId ||
+      store.activeNonStrikerId ||
+      store.doc?.pendingBatterIds?.[currentInnings?.index ?? 0]?.nonStrikerId ||
+      (currentInnings?.index === 1
+        ? store.doc?.secondInningsOpeners?.nonStrikerId || store.doc?.setup?.openers?.nonStrikerId
+        : store.doc?.setup?.openers?.nonStrikerId)
+    );
+  }, [currentInnings?.nonStrikerId, currentInnings?.index, store.doc, store.activeNonStrikerId]);
+
+  const activeBowlerId = useMemo(() => {
+    return (
+      currentInnings?.currentBowlerId ||
+      store.activeBowlerId ||
+      store.doc?.pendingBowlerIds?.[currentInnings?.index ?? 0] ||
+      (currentInnings?.index === 1
+        ? store.doc?.secondInningsOpeningBowlerId || store.doc?.setup?.openingBowlerId
+        : store.doc?.setup?.openingBowlerId)
+    );
+  }, [currentInnings?.currentBowlerId, currentInnings?.index, store.doc, store.activeBowlerId]);
+
   const striker = useMemo(() => {
-    if (!currentInnings?.strikerId) return undefined;
-    return lookup.player(currentInnings.strikerId) ?? players.find((p) => p.id === currentInnings.strikerId);
-  }, [currentInnings?.strikerId, players]);
+    if (!activeStrikerId) return undefined;
+    return lookup.player(activeStrikerId) ?? players.find((p) => p.id === activeStrikerId);
+  }, [activeStrikerId, players]);
 
   const strikerStats = useMemo(() => {
-    if (!currentInnings?.strikerId || !currentInnings.batters) return undefined;
-    return currentInnings.batters.find((b) => b.playerId === currentInnings.strikerId);
-  }, [currentInnings]);
+    if (!activeStrikerId) return undefined;
+    return currentInnings?.batters?.find((b) => b.playerId === activeStrikerId);
+  }, [activeStrikerId, currentInnings?.batters]);
 
   const nonStriker = useMemo(() => {
-    if (!currentInnings?.nonStrikerId) return undefined;
-    return lookup.player(currentInnings.nonStrikerId) ?? players.find((p) => p.id === currentInnings.nonStrikerId);
-  }, [currentInnings?.nonStrikerId, players]);
+    if (!activeNonStrikerId) return undefined;
+    return lookup.player(activeNonStrikerId) ?? players.find((p) => p.id === activeNonStrikerId);
+  }, [activeNonStrikerId, players]);
 
   const nonStrikerStats = useMemo(() => {
-    if (!currentInnings?.nonStrikerId || !currentInnings.batters) return undefined;
-    return currentInnings.batters.find((b) => b.playerId === currentInnings.nonStrikerId);
-  }, [currentInnings]);
+    if (!activeNonStrikerId) return undefined;
+    return currentInnings?.batters?.find((b) => b.playerId === activeNonStrikerId);
+  }, [activeNonStrikerId, currentInnings?.batters]);
 
   const bowler = useMemo(() => {
-    const bowlerId =
-      currentInnings?.currentBowlerId ||
-      store.doc?.pendingBowlerIds?.[currentInnings?.index ?? 0] ||
-      store.doc?.setup?.openingBowlerId;
-    if (!bowlerId) return undefined;
-    return lookup.player(bowlerId) ?? players.find((p) => p.id === bowlerId);
-  }, [currentInnings?.currentBowlerId, currentInnings?.index, store.doc, players]);
+    if (!activeBowlerId) return undefined;
+    return lookup.player(activeBowlerId) ?? players.find((p) => p.id === activeBowlerId);
+  }, [activeBowlerId, players]);
 
   const bowlerStats = useMemo(() => {
-    const bowlerId =
-      currentInnings?.currentBowlerId ||
-      store.doc?.pendingBowlerIds?.[currentInnings?.index ?? 0] ||
-      store.doc?.setup?.openingBowlerId;
-    if (!bowlerId || !currentInnings?.bowlers) return undefined;
-    return currentInnings.bowlers.find((b) => b.playerId === bowlerId);
-  }, [currentInnings?.currentBowlerId, currentInnings?.index, currentInnings?.bowlers, store.doc]);
+    if (!activeBowlerId) return undefined;
+    return currentInnings?.bowlers?.find((b) => b.playerId === activeBowlerId);
+  }, [activeBowlerId, currentInnings?.bowlers]);
 
   const recentBalls = useMemo(() => {
     return currentInnings?.recentBalls ?? [];

@@ -93,7 +93,7 @@ export function useObsHandlerReceiver(matchId: string) {
       } catch {}
     };
     pollServer();
-    const pollInterval = setInterval(pollServer, 400);
+    const pollInterval = setInterval(pollServer, 200);
 
     // Request initial state on mount
     obsHandlerService.requestSync(matchId);
