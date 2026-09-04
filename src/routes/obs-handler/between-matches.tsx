@@ -23,6 +23,7 @@ function ObsBetweenMatches() {
   const backgroundStreamUrl = obsStreamRepository.getStreamUrl(liveMatch?.id) || undefined;
 
   const graphics = [
+    { id: "NEW_BATTER", label: "NEXT BATSMAN ENTRY", icon: Users, desc: "Incoming batsman on-demand popup" },
     { id: "ADVERTISEMENT", label: "SPONSOR AD BREAK", icon: Sparkles, desc: "Show ValGrow sponsor ad card" },
     { id: "UPCOMING", label: "UPCOMING MATCHES", icon: Calendar, desc: "Show tournament next fixtures" },
     { id: "SQUADS", label: "TEAM SQUADS", icon: Users, desc: "Playing XI & substitutes preview" },
@@ -51,6 +52,12 @@ function ObsBetweenMatches() {
         title: "POWERED BY VALGROW LABS",
         subtitle: "Official Technology Partner",
         mediaUrl: "/valgrow-labs-logo.jpeg",
+      };
+    } else if (type === "NEW_BATTER") {
+      extraPayload = {
+        batterName: "UPCOMING BATTER",
+        teamName: "Batting Team",
+        role: "Batsman",
       };
     }
     setGraphic({

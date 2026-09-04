@@ -1,10 +1,11 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useState, useEffect, useMemo } from "react";
-import { useMatches, useTeams } from "@/hooks/useCricketData";
+import { useMatches, useTeams, usePlayers } from "@/hooks/useCricketData";
 import { useObsHandlerMaster } from "@/hooks/useObsHandlerMaster";
+import { useObsMatchStream } from "@/hooks/useObsMatchStream";
 import { GraphicRenderer } from "@/components/obs/GraphicRenderer";
-import { Play, Square, Settings, RefreshCw, Maximize2, Radio, Sparkles, Video, Check, Trash2, ExternalLink } from "lucide-react";
-import { TOURNAMENT_NAME } from "@/lib/repositories";
+import { Play, Square, Settings, RefreshCw, Maximize2, Radio, Sparkles, Video, Check, Trash2, ExternalLink, User, Users, Calendar, Trophy, ChevronRight } from "lucide-react";
+import { TOURNAMENT_NAME, lookup } from "@/lib/repositories";
 import { obsHandlerService } from "@/lib/obsHandlerService";
 import { obsStreamRepository } from "@/lib/obsStreamRepository";
 
@@ -15,6 +16,7 @@ export const Route = createFileRoute("/obs-handler/")({
 function ObsHandlerIndex() {
   const { data: matches = [], isLoading } = useMatches();
   const { data: teams = [] } = useTeams();
+  const { data: players = [] } = usePlayers();
   const [selectedMatchOverride, setSelectedMatchOverride] = useState<string>(() => {
     const stored = obsHandlerService.getActiveMatch();
     return stored === "auto" ? "" : (stored || "");
@@ -39,12 +41,63 @@ function ObsHandlerIndex() {
 
   const activeMatchId = activeMatch?.id || "";
 
+  const stream = useObsMatchStream(activeMatchId);
+
   const [inputStreamUrl, setInputStreamUrl] = useState<string>(() => {
     return obsStreamRepository.getStreamUrl(activeMatchId || undefined) || "";
   });
   const [isStreamSaved, setIsStreamSaved] = useState<boolean>(false);
 
   const { activeGraphic, isOverlayConnected, setGraphic, clearGraphic } = useObsHandlerMaster(activeMatchId);
+
+  // ── Next Batter Resolution & State ────────────────────────────────────────
+  const currentBattingTeamId = stream.battingTeam?.id || activeMatch?.teamAId || "";
+  const currentBattingTeamName = stream.battingTeam?.name || (activeMatch ? teams.find(t => t.id === activeMatch.teamAId)?.name : "Batting Team") || "Batting Team";
+
+  const allBattingPlayers = useMemo(() => {
+    if (!currentBattingTeamId) return [];
+    return lookup.playersOf(currentBattingTeamId) || [];
+  }, [currentBattingTeamId]);
+
+  const upcomingBattersList = useMemo(() => {
+    const currentInnings = stream.currentInnings;
+    const strikerId = currentInnings?.strikerId;
+    const nonStrikerId = currentInnings?.nonStrikerId;
+    const dismissedIds = new Set(
+      (currentInnings?.batters || [])
+        .filter((b) => b.isOut || (b.balls > 0 && b.playerId !== strikerId && b.playerId !== nonStrikerId))
+        .map((b) => b.playerId)
+    );
+
+    return allBattingPlayers.map((p) => {
+      const isCurrentStriker = p.id === strikerId;
+      const isCurrentNonStriker = p.id === nonStrikerId;
+      const isOut = dismissedIds.has(p.id);
+      return {
+        ...p,
+        isCurrentStriker,
+        isCurrentNonStriker,
+        isOut,
+      };
+    });
+  }, [allBattingPlayers, stream.currentInnings]);
+
+  const [selectedBatterId, setSelectedBatterId] = useState<string>("");
+  const [batterEntryDuration, setBatterEntryDuration] = useState<number>(5000);
+
+  // Auto-select first unbatted upcoming batter
+  useEffect(() => {
+    if (upcomingBattersList.length > 0 && (!selectedBatterId || !upcomingBattersList.some(p => p.id === selectedBatterId))) {
+      const firstUpcoming = upcomingBattersList.find(p => !p.isCurrentStriker && !p.isCurrentNonStriker && !p.isOut) || upcomingBattersList[0];
+      if (firstUpcoming) {
+        setSelectedBatterId(firstUpcoming.id);
+      }
+    }
+  }, [upcomingBattersList, selectedBatterId]);
+
+  const selectedBatterObj = useMemo(() => {
+    return upcomingBattersList.find((p) => p.id === selectedBatterId) || upcomingBattersList[0];
+  }, [upcomingBattersList, selectedBatterId]);
 
   const getTeamName = (id?: string) => (id ? teams.find((t) => t.id === id)?.name || id : "TBD");
 
@@ -242,7 +295,227 @@ function ObsHandlerIndex() {
         </div>
 
 
-        {/* Live Score Control */}
+        {/* ── Section 1: Showcase Sections & Overlay Layout Controls ── */}
+        <div className="bg-[#111111] border border-[#222222] rounded-2xl p-5 shadow-xl flex flex-col gap-4">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <Sparkles className="w-4 h-4 text-[#D9A928]" />
+              <h3 className="text-[10px] font-black uppercase tracking-widest text-[#D9A928]">
+                Showcase Sections Manager
+              </h3>
+            </div>
+            <span className="text-[9px] font-black uppercase px-2 py-0.5 rounded-full border bg-[#D9A928]/15 text-[#D9A928] border-[#D9A928]/30">
+              BROADCAST CONFIG
+            </span>
+          </div>
+
+          <p className="text-[11px] text-white/60 leading-relaxed">
+            Configure how many and which overlay showcase sections to display on the live broadcast feed.
+          </p>
+
+          {/* Preset Layout Showcase Modes */}
+          <div className="grid grid-cols-2 gap-2">
+            <button
+              onClick={() => {
+                clearGraphic();
+              }}
+              className={`tap p-3 rounded-xl border text-left transition-all ${
+                !activeGraphic || activeGraphic.type === "LIVE_SCORE"
+                  ? "bg-[#D9A928]/15 border-[#D9A928] text-white"
+                  : "bg-[#1A1A1A] border-[#333333] text-white/70 hover:border-white/30"
+              }`}
+            >
+              <p className="text-[10px] font-black uppercase tracking-wider text-[#D9A928]">FULL BROADCAST</p>
+              <p className="text-[9px] text-[#888888]">Live Score + Popups + Alerts</p>
+            </button>
+
+            <button
+              onClick={() => {
+                setGraphic({
+                  type: "ADVERTISEMENT",
+                  duration: 0,
+                  payload: {
+                    title: "POWERED BY VALGROW LABS",
+                    subtitle: "Official Technology Partner",
+                    mediaUrl: "/valgrow-labs-logo.jpeg",
+                  },
+                });
+              }}
+              className={`tap p-3 rounded-xl border text-left transition-all ${
+                activeGraphic?.type === "ADVERTISEMENT"
+                  ? "bg-[#D9A928]/15 border-[#D9A928] text-white"
+                  : "bg-[#1A1A1A] border-[#333333] text-white/70 hover:border-white/30"
+              }`}
+            >
+              <p className="text-[10px] font-black uppercase tracking-wider text-[#D9A928]">SPONSOR BREAK</p>
+              <p className="text-[9px] text-[#888888]">ValGrow Labs Ad Card</p>
+            </button>
+
+            <button
+              onClick={() => {
+                setGraphic({ type: "SQUADS", duration: 0 });
+              }}
+              className={`tap p-3 rounded-xl border text-left transition-all ${
+                activeGraphic?.type === "SQUADS"
+                  ? "bg-[#D9A928]/15 border-[#D9A928] text-white"
+                  : "bg-[#1A1A1A] border-[#333333] text-white/70 hover:border-white/30"
+              }`}
+            >
+              <p className="text-[10px] font-black uppercase tracking-wider text-[#D9A928]">PLAYING XI SQUADS</p>
+              <p className="text-[9px] text-[#888888]">Team Lineups Showcase</p>
+            </button>
+
+            <button
+              onClick={() => {
+                setGraphic({ type: "UPCOMING", duration: 0 });
+              }}
+              className={`tap p-3 rounded-xl border text-left transition-all ${
+                activeGraphic?.type === "UPCOMING"
+                  ? "bg-[#D9A928]/15 border-[#D9A928] text-white"
+                  : "bg-[#1A1A1A] border-[#333333] text-white/70 hover:border-white/30"
+              }`}
+            >
+              <p className="text-[10px] font-black uppercase tracking-wider text-[#D9A928]">UPCOMING MATCHES</p>
+              <p className="text-[9px] text-[#888888]">Tournament Fixtures</p>
+            </button>
+          </div>
+        </div>
+
+        {/* ── Section 2: Upcoming Next Batsman Entry Controller ── */}
+        <div className="bg-[#111111] border border-[#222222] rounded-2xl p-5 shadow-xl flex flex-col gap-4">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <span className="h-2 w-2 rounded-full bg-[#D9A928] animate-pulse" />
+              <h3 className="text-[10px] font-black uppercase tracking-widest text-[#D9A928]">
+                Next Batsman Entry (Coming Up Next)
+              </h3>
+            </div>
+            <span className="text-[9px] font-black uppercase text-[#888888] bg-[#222222] px-2 py-0.5 rounded">
+              ON-DEMAND POPUP
+            </span>
+          </div>
+
+          <p className="text-[11px] text-white/60 leading-relaxed">
+            Showcase who is incoming or coming up next to bat with player photo, role, and team graphics.
+          </p>
+
+          {/* Batting Team & Player Selector */}
+          <div className="flex flex-col gap-3">
+            {/* Batter Dropdown Selector */}
+            <div className="flex flex-col gap-1.5">
+              <label className="text-[9px] font-black uppercase tracking-widest text-white/50">
+                Select Upcoming Batter ({currentBattingTeamName})
+              </label>
+              <select
+                value={selectedBatterId}
+                onChange={(e) => setSelectedBatterId(e.target.value)}
+                className="w-full bg-[#1A1A1A] border border-[#333333] text-white rounded-xl px-4 py-2.5 text-xs font-bold focus:outline-none focus:border-[#D9A928] transition-colors cursor-pointer"
+              >
+                {upcomingBattersList.length === 0 ? (
+                  <option value="">No players found for batting team</option>
+                ) : (
+                  upcomingBattersList.map((p) => (
+                    <option key={p.id} value={p.id} className="bg-[#111111] text-white">
+                      {p.isCurrentStriker
+                        ? `🏏 ${p.name} (Current Striker)`
+                        : p.isCurrentNonStriker
+                        ? `🏃 ${p.name} (Current Non-Striker)`
+                        : p.isOut
+                        ? `❌ ${p.name} (Dismissed)`
+                        : `⭐ ${p.name} · ${p.role || "Batsman"}`}
+                    </option>
+                  ))
+                )}
+              </select>
+            </div>
+
+            {/* Selected Batter Card Preview */}
+            {selectedBatterObj && (
+              <div className="flex items-center gap-3 p-3 bg-black/60 border border-[#D9A928]/30 rounded-xl">
+                <div className="w-12 h-12 rounded-full border border-[#D9A928] overflow-hidden bg-[#222222] flex items-center justify-center flex-shrink-0">
+                  {selectedBatterObj.avatarUrl ? (
+                    <img src={selectedBatterObj.avatarUrl} alt={selectedBatterObj.name} className="w-full h-full object-cover" />
+                  ) : (
+                    <span className="text-sm font-black text-[#D9A928]">
+                      {selectedBatterObj.name.substring(0, 2).toUpperCase()}
+                    </span>
+                  )}
+                </div>
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center gap-2">
+                    <p className="text-xs font-black uppercase text-white truncate">
+                      {selectedBatterObj.name}
+                    </p>
+                    <span className="text-[9px] font-bold px-1.5 py-0.5 rounded bg-[#D9A928]/20 text-[#D9A928] border border-[#D9A928]/40 shrink-0">
+                      {selectedBatterObj.role || "Batsman"}
+                    </span>
+                  </div>
+                  <p className="text-[10px] text-white/50 truncate mt-0.5">
+                    {currentBattingTeamName} · Next in line
+                  </p>
+                </div>
+              </div>
+            )}
+
+            {/* Duration Selector & Action Buttons */}
+            <div className="flex items-center gap-2">
+              <div className="w-1/3">
+                <select
+                  value={batterEntryDuration}
+                  onChange={(e) => setBatterEntryDuration(Number(e.target.value))}
+                  className="w-full bg-[#1A1A1A] border border-[#333333] text-white rounded-xl px-2.5 py-2.5 text-xs font-bold focus:outline-none focus:border-[#D9A928] cursor-pointer"
+                >
+                  <option value={3500}>3.5s Popup</option>
+                  <option value={5000}>5.0s Popup</option>
+                  <option value={8000}>8.0s Popup</option>
+                  <option value={12000}>12s Popup</option>
+                  <option value={0}>On Air (Hold)</option>
+                </select>
+              </div>
+
+              <button
+                disabled={!selectedBatterObj}
+                onClick={() => {
+                  if (!selectedBatterObj) return;
+                  if (activeGraphic?.type === "NEW_BATTER" && activeGraphic.payload?.batterName === selectedBatterObj.name) {
+                    clearGraphic();
+                  } else {
+                    setGraphic({
+                      type: "NEW_BATTER",
+                      duration: batterEntryDuration === 0 ? undefined : batterEntryDuration,
+                      payload: {
+                        batterName: selectedBatterObj.name,
+                        teamName: currentBattingTeamName,
+                        role: selectedBatterObj.role || "Batsman",
+                        avatar: selectedBatterObj.avatarUrl,
+                        stats: selectedBatterObj.battingStyle ? `Batting: ${selectedBatterObj.battingStyle}` : undefined,
+                      },
+                    });
+                  }
+                }}
+                className={`tap flex-1 py-3 px-4 rounded-xl font-black uppercase tracking-wider text-xs transition-all flex items-center justify-center gap-2 ${
+                  activeGraphic?.type === "NEW_BATTER" && activeGraphic.payload?.batterName === selectedBatterObj?.name
+                    ? "bg-red-600 text-white shadow-[0_0_15px_rgba(220,38,38,0.5)]"
+                    : "bg-[#D9A928] text-black hover:bg-[#F4C542] shadow-[0_0_15px_rgba(217,169,40,0.4)]"
+                } disabled:opacity-30 disabled:cursor-not-allowed`}
+              >
+                {activeGraphic?.type === "NEW_BATTER" && activeGraphic.payload?.batterName === selectedBatterObj?.name ? (
+                  <>
+                    <Square className="w-4 h-4" />
+                    HIDE BATTER ENTRY
+                  </>
+                ) : (
+                  <>
+                    <Play className="w-4 h-4" />
+                    SHOW NEXT BATTER (ON AIR)
+                  </>
+                )}
+              </button>
+            </div>
+          </div>
+        </div>
+
+        {/* ── Section 3: Live Score Control ── */}
         <div className="bg-[#111111] border border-[#222222] rounded-2xl p-5 shadow-xl">
           <h3 className="text-[10px] font-black uppercase tracking-widest text-[#888888] mb-4">
             Live Score Control
@@ -281,7 +554,7 @@ function ObsHandlerIndex() {
           </div>
         </div>
 
-        {/* Live Event Popups */}
+        {/* ── Section 4: Live Event Popups ── */}
         <div className="bg-[#111111] border border-[#222222] rounded-2xl p-5 shadow-xl">
           <h3 className="text-[10px] font-black uppercase tracking-widest text-[#D9A928] mb-4">
             Live Event Popups
@@ -326,7 +599,7 @@ function ObsHandlerIndex() {
           </div>
         </div>
 
-        {/* Commercial Break & Break Graphics */}
+        {/* ── Section 5: Commercial Break & Break Graphics ── */}
         <div className="bg-[#111111] border border-[#222222] rounded-2xl p-5 shadow-xl">
           <div className="flex items-center justify-between mb-4">
             <h3 className="text-[10px] font-black uppercase tracking-widest text-[#D9A928]">

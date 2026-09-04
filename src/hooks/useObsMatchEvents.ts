@@ -85,6 +85,8 @@ export type ObsBroadcastEvent =
       batterName: string;
       teamName?: string;
       role?: string;
+      avatar?: string;
+      stats?: string;
     }
   | {
       id: string;
@@ -533,6 +535,7 @@ export function useObsMatchEvents(stream: ObsMatchStreamResult) {
               batterName: getPlayerName(batterId),
               teamName: battingTeam?.name,
               role: getPlayerRole(batterId),
+              avatar: getPlayerAvatar(batterId),
             });
           }
         }

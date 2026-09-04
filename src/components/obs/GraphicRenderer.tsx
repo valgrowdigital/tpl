@@ -148,10 +148,12 @@ export function GraphicRenderer({ matchId, backgroundStreamUrl, isPreview = fals
                 id: activeGraphic.payload?.eventId || "handler-newbatter-active",
                 type: "NEW_BATTER",
                 priority: 100,
-                durationMs: 4000,
+                durationMs: activeGraphic.duration || 4000,
                 batterName: activeGraphic.payload?.batterName || stream.striker?.name || "BATTER",
                 teamName: activeGraphic.payload?.teamName || stream.battingTeam?.name,
                 role: activeGraphic.payload?.role,
+                avatar: activeGraphic.payload?.avatar,
+                stats: activeGraphic.payload?.stats,
               }}
             />
             <ScoreboardBar stream={stream} />
