@@ -3,13 +3,13 @@ import { useState, useEffect } from "react";
 import { obsStreamRepository } from "@/lib/obsStreamRepository";
 import { obsHandlerService } from "@/lib/obsHandlerService";
 import { useMatches } from "@/hooks/useCricketData";
-import { Video, Check, Trash2, Settings, ShieldCheck, Radio, Sparkles } from "lucide-react";
+import { Video, Check, Trash2, Settings, ShieldCheck, Radio, Sparkles, Clock, Sliders, RotateCw } from "lucide-react";
 
 export const Route = createFileRoute("/obs-handler/settings")({
   component: ObsHandlerSettingsPage,
 });
 
-function ObsHandlerSettingsPage() {
+export function ObsHandlerSettingsPage() {
   const { data: matches = [] } = useMatches();
   const [activeMatchId, setActiveMatchId] = useState<string>(() => {
     return obsHandlerService.getActiveMatch() || "";
@@ -17,6 +17,24 @@ function ObsHandlerSettingsPage() {
   const [streamUrl, setStreamUrl] = useState<string>(() => {
     return obsStreamRepository.getStreamUrl(obsHandlerService.getActiveMatch() || undefined) || "";
   });
+
+  // ── Customizable Alert & Graphic Intervals ────────────────────────────────
+  const [eventDurationSec, setEventDurationSec] = useState<number>(() => {
+    if (typeof window !== "undefined") {
+      const stored = window.localStorage.getItem("tpl_obs_event_duration_ms");
+      if (stored) return Math.round(Number(stored) / 1000);
+    }
+    return 4; // Default 4 seconds
+  });
+
+  const [rotationDurationSec, setRotationDurationSec] = useState<number>(() => {
+    if (typeof window !== "undefined") {
+      const stored = window.localStorage.getItem("tpl_obs_rotation_duration_s");
+      if (stored) return Number(stored);
+    }
+    return 10; // Default 10 seconds
+  });
+
   const [savedMessage, setSavedMessage] = useState<string>("");
 
   useEffect(() => {
@@ -25,7 +43,7 @@ function ObsHandlerSettingsPage() {
     }
   }, [activeMatchId]);
 
-  const handleSave = () => {
+  const handleSaveStream = () => {
     if (!streamUrl.trim()) {
       obsStreamRepository.removeStreamUrl(activeMatchId);
       obsHandlerService.setStreamUrl("", activeMatchId);
@@ -39,11 +57,31 @@ function ObsHandlerSettingsPage() {
     setTimeout(() => setSavedMessage(""), 3000);
   };
 
-  const handleClear = () => {
+  const handleClearStream = () => {
     obsStreamRepository.removeStreamUrl(activeMatchId);
     obsHandlerService.setStreamUrl("", activeMatchId);
     setStreamUrl("");
     setSavedMessage("Stream URL cleared.");
+    setTimeout(() => setSavedMessage(""), 3000);
+  };
+
+  const handleSaveIntervals = () => {
+    if (typeof window !== "undefined") {
+      window.localStorage.setItem("tpl_obs_event_duration_ms", String(eventDurationSec * 1000));
+      window.localStorage.setItem("tpl_obs_rotation_duration_s", String(rotationDurationSec));
+    }
+    setSavedMessage("Overlay timings & intervals saved successfully!");
+    setTimeout(() => setSavedMessage(""), 3000);
+  };
+
+  const handleResetIntervals = () => {
+    setEventDurationSec(4);
+    setRotationDurationSec(10);
+    if (typeof window !== "undefined") {
+      window.localStorage.setItem("tpl_obs_event_duration_ms", "4000");
+      window.localStorage.setItem("tpl_obs_rotation_duration_s", "10");
+    }
+    setSavedMessage("Timings reset to broadcast defaults (4s alerts / 10s rotation).");
     setTimeout(() => setSavedMessage(""), 3000);
   };
 
@@ -59,19 +97,142 @@ function ObsHandlerSettingsPage() {
             Broadcast & Stream Settings
           </h1>
           <p className="text-xs text-[#888888]">
-            Configure live video feed, OBS overlays, and broadcast endpoints
+            Configure live video feed, overlay popup intervals, and broadcast canvas
           </p>
         </div>
       </div>
 
       {savedMessage && (
-        <div className="p-4 rounded-xl bg-emerald-500/15 border border-emerald-500/30 text-emerald-400 text-xs font-bold flex items-center gap-2">
+        <div className="p-4 rounded-xl bg-emerald-500/15 border border-emerald-500/30 text-emerald-400 text-xs font-bold flex items-center gap-2 animate-in fade-in">
           <Check className="w-4 h-4" />
           {savedMessage}
         </div>
       )}
 
-      {/* Live Stream URL Configuration */}
+      {/* ── 1. CUSTOM OVERLAY DISPLAY INTERVALS & TIMINGS ─────────────────── */}
+      <div className="bg-[#111111] border border-[#222222] rounded-2xl p-6 shadow-xl flex flex-col gap-5">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-2.5">
+            <Clock className="w-5 h-5 text-[#D9A928]" />
+            <h2 className="text-sm font-black uppercase tracking-wider text-[#D9A928]">
+              Overlay Display Intervals & Timings
+            </h2>
+          </div>
+          <span className="text-[10px] font-bold text-[#888888] uppercase bg-[#1A1A1A] px-2.5 py-1 rounded-md border border-[#333333]">
+            CUSTOMIZABLE
+          </span>
+        </div>
+
+        <p className="text-xs text-[#888888] leading-relaxed">
+          Set how long popups and banners remain visible on the live broadcast before automatically returning to the standard scoreboard.
+        </p>
+
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 pt-1">
+          {/* Event Popups Duration */}
+          <div className="p-4 rounded-xl bg-[#181818] border border-[#2A2A2A] flex flex-col gap-3">
+            <div className="flex items-center justify-between">
+              <label className="text-xs font-black uppercase tracking-wider text-white">
+                Event Alert Duration
+              </label>
+              <span className="text-sm font-black font-mono text-[#D9A928] bg-black/60 px-2.5 py-0.5 rounded border border-[#D9A928]/40">
+                {eventDurationSec}s
+              </span>
+            </div>
+            <p className="text-[11px] text-[#777777]">
+              Duration for 4s, 6s, Wickets, No-Ball alerts, and New Batter crease entries.
+            </p>
+
+            <input
+              type="range"
+              min="1"
+              max="20"
+              step="1"
+              value={eventDurationSec}
+              onChange={(e) => setEventDurationSec(Number(e.target.value))}
+              className="w-full accent-[#D9A928] cursor-pointer"
+            />
+
+            {/* Quick Preset Buttons */}
+            <div className="flex flex-wrap gap-1.5 pt-1">
+              {[2, 3.5, 4, 6, 8, 10].map((sec) => (
+                <button
+                  key={sec}
+                  onClick={() => setEventDurationSec(sec)}
+                  className={`tap px-2.5 py-1 rounded-lg text-[10px] font-bold uppercase transition-all ${
+                    eventDurationSec === sec
+                      ? "bg-[#D9A928] text-black font-black"
+                      : "bg-[#222222] text-[#888888] hover:text-white"
+                  }`}
+                >
+                  {sec}s
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {/* Graphic Rotation Duration */}
+          <div className="p-4 rounded-xl bg-[#181818] border border-[#2A2A2A] flex flex-col gap-3">
+            <div className="flex items-center justify-between">
+              <label className="text-xs font-black uppercase tracking-wider text-white">
+                Graphic Autopilot Interval
+              </label>
+              <span className="text-sm font-black font-mono text-[#D9A928] bg-black/60 px-2.5 py-0.5 rounded border border-[#D9A928]/40">
+                {rotationDurationSec}s
+              </span>
+            </div>
+            <p className="text-[11px] text-[#777777]">
+              Rotation interval between full-screen graphics (Squads, Points Table, Awards).
+            </p>
+
+            <input
+              type="range"
+              min="5"
+              max="60"
+              step="5"
+              value={rotationDurationSec}
+              onChange={(e) => setRotationDurationSec(Number(e.target.value))}
+              className="w-full accent-[#D9A928] cursor-pointer"
+            />
+
+            {/* Quick Preset Buttons */}
+            <div className="flex flex-wrap gap-1.5 pt-1">
+              {[5, 10, 15, 20, 30, 45].map((sec) => (
+                <button
+                  key={sec}
+                  onClick={() => setRotationDurationSec(sec)}
+                  className={`tap px-2.5 py-1 rounded-lg text-[10px] font-bold uppercase transition-all ${
+                    rotationDurationSec === sec
+                      ? "bg-[#D9A928] text-black font-black"
+                      : "bg-[#222222] text-[#888888] hover:text-white"
+                  }`}
+                >
+                  {sec}s
+                </button>
+              ))}
+            </div>
+          </div>
+        </div>
+
+        <div className="flex items-center gap-3 pt-2">
+          <button
+            onClick={handleSaveIntervals}
+            className="tap px-6 py-3 rounded-xl bg-[#D9A928] hover:bg-[#F4C542] text-black text-xs font-black uppercase tracking-widest flex items-center gap-2 shadow-lg transition-all"
+          >
+            <Check className="w-4 h-4" />
+            Apply Timing Changes
+          </button>
+
+          <button
+            onClick={handleResetIntervals}
+            className="tap px-4 py-3 rounded-xl bg-[#222222] hover:bg-[#333333] text-[#888888] hover:text-white text-xs font-bold transition-all flex items-center gap-2"
+          >
+            <RotateCw className="w-4 h-4" />
+            Reset Defaults
+          </button>
+        </div>
+      </div>
+
+      {/* ── 2. LIVE STREAM URL CONFIGURATION ──────────────────────────────── */}
       <div className="bg-[#111111] border border-[#222222] rounded-2xl p-6 shadow-xl flex flex-col gap-4">
         <div className="flex items-center gap-2">
           <Video className="w-5 h-5 text-[#D9A928]" />
@@ -99,16 +260,16 @@ function ObsHandlerSettingsPage() {
 
         <div className="flex items-center gap-3 pt-2">
           <button
-            onClick={handleSave}
+            onClick={handleSaveStream}
             className="tap px-6 py-3 rounded-xl bg-[#D9A928] hover:bg-[#F4C542] text-black text-xs font-black uppercase tracking-widest flex items-center gap-2 shadow-lg transition-all"
           >
             <Check className="w-4 h-4" />
-            Save & Broadcast Stream
+            Save Stream URL
           </button>
 
           {streamUrl && (
             <button
-              onClick={handleClear}
+              onClick={handleClearStream}
               className="tap px-4 py-3 rounded-xl bg-[#222222] hover:bg-red-950/40 hover:text-red-400 border border-[#333333] text-[#888888] text-xs font-bold transition-all flex items-center gap-2"
             >
               <Trash2 className="w-4 h-4" />
@@ -118,12 +279,12 @@ function ObsHandlerSettingsPage() {
         </div>
       </div>
 
-      {/* OBS Studio Integration Quick Links */}
+      {/* ── 3. OBS STUDIO INTEGRATION ──────────────────────────────────────── */}
       <div className="bg-[#111111] border border-[#222222] rounded-2xl p-6 shadow-xl flex flex-col gap-4">
         <div className="flex items-center gap-2">
           <Radio className="w-5 h-5 text-[#D9A928]" />
           <h2 className="text-sm font-black uppercase tracking-wider text-white">
-            OBS Browser Source URLs
+            Default Master OBS URL
           </h2>
         </div>
 
@@ -138,7 +299,7 @@ function ObsHandlerSettingsPage() {
               </p>
             </div>
             <code className="text-[11px] bg-black/60 p-2 rounded text-emerald-400 font-mono select-all break-all">
-              http://localhost:8082/obs/live
+              {typeof window !== "undefined" ? `${window.location.origin}/obs/live` : "https://tpl.valgrowlabs.com/obs/live"}
             </code>
           </div>
 

@@ -149,10 +149,16 @@ function ObsBetweenMatches() {
                 className="w-full bg-[#1A1A1A] border border-[#333333] text-white rounded-xl px-3 py-2 text-xs font-bold focus:outline-none focus:border-[#D9A928] cursor-pointer"
               >
                 <option value={0}>Until Stopped</option>
+                <option value={2000}>2 Seconds</option>
+                <option value={3500}>3.5 Seconds</option>
                 <option value={5000}>5 Seconds</option>
+                <option value={8000}>8 Seconds</option>
                 <option value={10000}>10 Seconds</option>
                 <option value={15000}>15 Seconds</option>
+                <option value={20000}>20 Seconds</option>
                 <option value={30000}>30 Seconds</option>
+                <option value={45000}>45 Seconds</option>
+                <option value={60000}>60 Seconds</option>
               </select>
             </div>
             <div>

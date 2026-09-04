@@ -155,6 +155,19 @@ const EVENT_PRIORITIES = {
   MATCH_START: 10,
 };
 
+export function getCustomEventDuration(baseMs: number): number {
+  if (typeof window !== "undefined") {
+    try {
+      const stored = window.localStorage.getItem("tpl_obs_event_duration_ms");
+      if (stored) {
+        const val = Number(stored);
+        if (!isNaN(val) && val >= 500 && val <= 60000) return val;
+      }
+    } catch {}
+  }
+  return baseMs;
+}
+
 export function useObsMatchEvents(stream: ObsMatchStreamResult) {
   const { data: matches = [] } = useMatches();
   const { data: players = [] } = usePlayers();
@@ -337,7 +350,7 @@ export function useObsMatchEvents(stream: ObsMatchStreamResult) {
           id: `noball-${deliv.id}`,
           type: "NO_BALL",
           priority: EVENT_PRIORITIES.NO_BALL,
-          durationMs: 3500,
+          durationMs: getCustomEventDuration(3500),
           bowlerName: bowler,
           freeHitNext: true,
           runs: (deliv.extraRuns ?? 1) + (deliv.batterRuns ?? 0),
@@ -366,7 +379,7 @@ export function useObsMatchEvents(stream: ObsMatchStreamResult) {
           id: `wicket-${deliv.id}`,
           type: "WICKET",
           priority: EVENT_PRIORITIES.WICKET,
-          durationMs: 4000,
+          durationMs: getCustomEventDuration(4000),
           batterName: outPlayerName,
           dismissalType: deliv.wicket.type,
           dismissalText,
@@ -380,7 +393,7 @@ export function useObsMatchEvents(stream: ObsMatchStreamResult) {
           id: `six-${deliv.id}`,
           type: "SIX",
           priority: EVENT_PRIORITIES.SIX,
-          durationMs: 3800,
+          durationMs: getCustomEventDuration(3800),
           batterName: batter,
           runs,
           balls,
@@ -391,7 +404,7 @@ export function useObsMatchEvents(stream: ObsMatchStreamResult) {
           id: `four-${deliv.id}`,
           type: "FOUR",
           priority: EVENT_PRIORITIES.FOUR,
-          durationMs: 3500,
+          durationMs: getCustomEventDuration(3500),
           batterName: batter,
           runs,
           balls,
