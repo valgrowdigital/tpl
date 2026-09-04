@@ -4,7 +4,7 @@ import { useMatches, useTeams, usePlayers } from "@/hooks/useCricketData";
 import { useObsHandlerMaster } from "@/hooks/useObsHandlerMaster";
 import { useObsMatchStream } from "@/hooks/useObsMatchStream";
 import { GraphicRenderer } from "@/components/obs/GraphicRenderer";
-import { Play, Square, Settings, RefreshCw, Maximize2, Radio, Sparkles, Video, Check, Trash2, ExternalLink, User, Users, Calendar, Trophy, ChevronRight } from "lucide-react";
+import { Play, Square, Settings, RefreshCw, Maximize2, Radio, Sparkles, Video, Check, Trash2, ExternalLink, User, Users, Calendar, Trophy, ChevronRight, Search } from "lucide-react";
 import { TOURNAMENT_NAME, lookup } from "@/lib/repositories";
 import { obsHandlerService } from "@/lib/obsHandlerService";
 import { obsStreamRepository } from "@/lib/obsStreamRepository";
