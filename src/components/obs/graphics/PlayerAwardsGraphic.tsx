@@ -1,5 +1,5 @@
 import { motion } from "framer-motion";
-import { Trophy, Flame, Target } from "lucide-react";
+import { Trophy, Flame, Target, Sparkles } from "lucide-react";
 import { Logo } from "@/components/brand/Logo";
 import { useMatches } from "@/hooks/useCricketData";
 import { calculateTournamentStats } from "@/lib/scoring/statistics";
@@ -35,8 +35,8 @@ export function PlayerAwardsGraphic({ payload, transitionType = "fade" }: Player
     {
       title: "ORANGE CAP",
       subtitle: orangeLeader && orangeLeader.runs > 0
-        ? `MOST RUNS (${orangeLeader.innings} INN · SR ${Math.round(orangeLeader.strikeRate || 0)})`
-        : "MOST RUNS (TOURNAMENT LEADER)",
+        ? `${orangeLeader.innings} INN · SR ${Math.round(orangeLeader.strikeRate || 0)}`
+        : "MOST RUNS LEADER",
       player: orangeLeader?.playerName || (matches.length > 0 ? "LEADER IN PROGRESS" : "AWAITING MATCHES"),
       team: orangeLeader?.teamShortName || orangeLeader?.teamName || "TPL 2026",
       value: orangeLeader && orangeLeader.runs > 0 ? `${orangeLeader.runs}` : "0",
@@ -44,26 +44,28 @@ export function PlayerAwardsGraphic({ payload, transitionType = "fade" }: Player
       icon: Flame,
       color: "text-orange-500",
       bgColor: "bg-orange-500",
-      borderColor: "border-orange-500/30",
+      borderColor: "border-orange-500/40",
+      pillBg: "bg-orange-500/15 text-orange-400 border-orange-500/30",
     },
     {
       title: "PURPLE CAP",
       subtitle: purpleLeader && purpleLeader.wickets > 0
-        ? `MOST WICKETS (ECON ${(purpleLeader.economy || 0).toFixed(1)} · BB ${purpleLeader.bestBowling || "—"})`
-        : "MOST WICKETS (TOURNAMENT LEADER)",
+        ? `ECON ${(purpleLeader.economy || 0).toFixed(1)} · BB ${purpleLeader.bestBowling || "—"}`
+        : "MOST WICKETS LEADER",
       player: purpleLeader?.playerName || (matches.length > 0 ? "LEADER IN PROGRESS" : "AWAITING MATCHES"),
       team: purpleLeader?.teamShortName || purpleLeader?.teamName || "TPL 2026",
       value: purpleLeader && purpleLeader.wickets > 0 ? `${purpleLeader.wickets}` : "0",
-      unit: "WICKETS",
+      unit: "WKTS",
       icon: Target,
-      color: "text-purple-500",
+      color: "text-purple-400",
       bgColor: "bg-purple-500",
-      borderColor: "border-purple-500/30",
+      borderColor: "border-purple-500/40",
+      pillBg: "bg-purple-500/15 text-purple-400 border-purple-500/30",
     },
     {
-      title: "MVP",
+      title: "TOURNAMENT MVP",
       subtitle: mvpLeader && mvpLeader.mvpPoints > 0
-        ? `MOST VALUABLE PLAYER (${mvpLeader.runs || 0}R · ${mvpLeader.wickets || 0}W · ${mvpLeader.catches || 0}C)`
+        ? `${mvpLeader.runs || 0}R · ${mvpLeader.wickets || 0}W · ${mvpLeader.catches || 0}C`
         : "MOST VALUABLE PLAYER",
       player: mvpLeader?.playerName || (matches.length > 0 ? "LEADER IN PROGRESS" : "AWAITING MATCHES"),
       team: mvpLeader?.teamShortName || mvpLeader?.teamName || "TPL 2026",
@@ -72,7 +74,8 @@ export function PlayerAwardsGraphic({ payload, transitionType = "fade" }: Player
       icon: Trophy,
       color: "text-[#D9A928]",
       bgColor: "bg-[#D9A928]",
-      borderColor: "border-[#D9A928]/30",
+      borderColor: "border-[#D9A928]/40",
+      pillBg: "bg-[#D9A928]/15 text-[#D9A928] border-[#D9A928]/30",
     },
   ];
 
@@ -81,69 +84,90 @@ export function PlayerAwardsGraphic({ payload, transitionType = "fade" }: Player
       initial={variants.initial}
       animate={variants.animate}
       exit={variants.exit}
-      transition={{ duration: 0.5, ease: [0.16, 1, 0.3, 1] }}
-      className="absolute inset-0 bg-[#0A0A0A]/95 backdrop-blur-xl flex flex-col pt-12 pb-24"
+      transition={{ duration: 0.4, ease: [0.16, 1, 0.3, 1] }}
+      className="w-full h-full flex flex-col items-center justify-center p-4 sm:p-6 relative select-none font-sans pointer-events-none"
     >
-      <div className="flex-1 max-w-[1400px] w-full mx-auto flex flex-col items-center justify-center">
+      {/* Ambient background glow */}
+      <div className="absolute w-[600px] h-[350px] bg-[#D9A928]/15 blur-[100px] rounded-full pointer-events-none" />
+
+      {/* Main Compact Broadcast Card */}
+      <div className="relative w-full max-w-3xl bg-[#090A0D] border-2 border-[#D9A928]/60 rounded-3xl p-5 sm:p-6 shadow-[0_25px_70px_rgba(0,0,0,0.95),0_0_30px_rgba(217,169,40,0.2)] flex flex-col items-center text-center overflow-hidden">
+        
         {/* Header */}
-        <div className="flex flex-col items-center justify-center mb-14 text-center">
-          <Logo className="h-16 w-auto mb-5 drop-shadow-2xl brightness-150" />
-          <h1 className="text-4xl sm:text-5xl font-black uppercase tracking-[0.2em] text-[#D9A928] drop-shadow-md">
-            TOURNAMENT LEADERS
-          </h1>
-          <p className="text-xs font-bold uppercase tracking-[0.3em] text-[#888888] mt-2">
+        <div className="flex flex-col items-center justify-center mb-4 text-center">
+          <Logo className="h-8 sm:h-9 w-auto mb-1 drop-shadow-md brightness-125" />
+          <div className="flex items-center gap-2">
+            <Sparkles className="w-3.5 h-3.5 text-[#D9A928]" />
+            <h1 className="text-lg sm:text-xl font-black uppercase tracking-[0.2em] text-[#D9A928] drop-shadow-sm">
+              TOURNAMENT LEADERS
+            </h1>
+            <Sparkles className="w-3.5 h-3.5 text-[#D9A928]" />
+          </div>
+          <p className="text-[9px] font-bold uppercase tracking-[0.25em] text-[#888888]">
             OFFICIAL TOURNAMENT AWARDS & LEADERBOARD
           </p>
         </div>
 
-        {/* Awards Container */}
-        <div className="flex items-stretch justify-center gap-8 w-full px-6">
+        {/* 3-Column Compact Cards Grid */}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-3 w-full mb-3">
           {awards.map((award, i) => (
             <div
               key={i}
-              className={`flex-1 bg-gradient-to-b from-[#141414] to-[#0A0A0A] border ${award.borderColor} rounded-3xl p-8 flex flex-col items-center shadow-2xl relative overflow-hidden min-h-[440px]`}
+              className={`bg-[#121317] border ${award.borderColor} rounded-2xl p-3.5 flex flex-col items-center justify-between shadow-lg relative overflow-hidden text-center min-h-[200px]`}
             >
-              <div className={`absolute top-0 left-0 w-full h-2 ${award.bgColor}`} />
+              {/* Top Accent Strip */}
+              <div className={`absolute top-0 left-0 w-full h-1 ${award.bgColor}`} />
 
-              <div
-                className={`w-20 h-20 rounded-2xl bg-[#1A1A1A] border border-white/10 flex items-center justify-center mb-5 shadow-xl ${award.color}`}
-              >
-                <award.icon className="w-10 h-10" />
+              {/* Icon & Title */}
+              <div className="flex flex-col items-center gap-1 mt-1">
+                <div
+                  className={`w-9 h-9 rounded-xl bg-black/60 border border-white/10 flex items-center justify-center shadow-inner ${award.color}`}
+                >
+                  <award.icon className="w-4 h-4" />
+                </div>
+                <h2 className={`text-xs font-black uppercase tracking-wider ${award.color}`}>
+                  {award.title}
+                </h2>
+                <span className={`text-[8px] font-mono font-black uppercase px-2 py-0.5 rounded-full border ${award.pillBg}`}>
+                  {award.subtitle}
+                </span>
               </div>
 
-              <h2 className={`text-2xl font-black uppercase tracking-[0.2em] mb-1 ${award.color}`}>
-                {award.title}
-              </h2>
-              <div className="text-[10px] font-black uppercase tracking-widest text-[#888888] mb-6 text-center max-w-[280px]">
-                {award.subtitle}
-              </div>
-
-              <div className="flex-1 flex flex-col items-center justify-center w-full my-auto">
-                <div className="text-2xl sm:text-3xl font-black uppercase tracking-wider text-white mb-1.5 text-center line-clamp-1">
+              {/* Player Name & Team */}
+              <div className="w-full my-2">
+                <p className="text-xs sm:text-sm font-black uppercase tracking-wide text-white truncate px-1">
                   {award.player}
-                </div>
-                <div className="text-xs font-bold uppercase tracking-widest text-[#777777] mb-6">
+                </p>
+                <p className="text-[9px] font-bold uppercase tracking-widest text-[#777777]">
                   {award.team}
-                </div>
-                <div className="flex items-baseline gap-2">
-                  <span className={`text-5xl sm:text-6xl font-black font-mono tracking-tight ${award.color}`}>
-                    {award.value}
-                  </span>
-                  <span className="text-xs font-black uppercase tracking-widest text-[#888888]">
-                    {award.unit}
-                  </span>
-                </div>
+                </p>
+              </div>
+
+              {/* Big Stat Number */}
+              <div className="flex items-baseline justify-center gap-1.5 pt-1 border-t border-white/5 w-full">
+                <span className={`text-2xl sm:text-3xl font-black font-mono tracking-tight ${award.color}`}>
+                  {award.value}
+                </span>
+                <span className="text-[9px] font-black uppercase tracking-widest text-[#888888]">
+                  {award.unit}
+                </span>
               </div>
             </div>
           ))}
         </div>
-      </div>
 
-      {/* Footer Branding */}
-      <div className="absolute bottom-8 left-0 w-full flex justify-center items-center">
-        <span className="text-xs font-black uppercase tracking-[0.3em] text-[#666666]">
-          POWERED BY <span className="text-white">VALGROW LABS</span>
-        </span>
+        {/* Compact Footer */}
+        <div className="w-full pt-2.5 border-t border-white/10 flex items-center justify-between text-[10px] font-bold text-[#888888]">
+          <span className="uppercase tracking-widest font-black text-[#AAAAAA]">
+            TPL 2026 PREMIER LEAGUE
+          </span>
+          <span className="uppercase tracking-wider font-mono">
+            POWERED BY <span className="text-[#D9A928] font-black">VALGROW LABS</span>
+          </span>
+        </div>
+
+        {/* Bottom Accent Glow */}
+        <div className="absolute bottom-0 left-8 right-8 h-0.5 bg-gradient-to-r from-transparent via-[#D9A928] to-transparent rounded-full shadow-[0_0_12px_#D9A928]" />
       </div>
     </motion.div>
   );
