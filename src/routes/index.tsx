@@ -657,6 +657,25 @@ function LandingScreen() {
                 };
               }
 
+              const teamSquad = (() => {
+                if (!team) return [];
+                const validTargets = new Set<string>();
+                if (team.id) validTargets.add(team.id.toLowerCase().trim());
+                if (team.slug) validTargets.add(team.slug.toLowerCase().trim());
+                if (team.shortName) validTargets.add(team.shortName.toLowerCase().trim());
+                if (team.name) {
+                  validTargets.add(team.name.toLowerCase().trim());
+                  validTargets.add(team.name.toLowerCase().trim().replace(/[^a-z0-9]+/g, "-"));
+                }
+
+                const matching = players.filter((p) => {
+                  if (!p.teamId || p.teamId.trim() === "") return false;
+                  return validTargets.has(p.teamId.toLowerCase().trim());
+                });
+
+                return matching.length > 0 ? matching : lookup.playersOf(team.id);
+              })();
+
               return (
                 <div
                   key={team.id}
@@ -672,7 +691,7 @@ function LandingScreen() {
                       {team.groupName || "GROUP STAGE"}
                     </span>
                     <span className="text-[10px] font-mono font-bold text-white/40 tracking-wider">
-                      {lookup.playersOf(team.id).length} {lookup.playersOf(team.id).length === 1 ? "PLAYER" : "PLAYERS"}
+                      {teamSquad.length} {teamSquad.length === 1 ? "PLAYER" : "PLAYERS"}
                     </span>
                   </div>
 
@@ -709,7 +728,7 @@ function LandingScreen() {
                   {/* Squad Preview: Overlapping Player Avatars */}
                   <div className="relative z-10 border-t border-white/10 pt-4 mt-2 flex items-center justify-between">
                     <div className="flex items-center -space-x-2">
-                      {lookup.playersOf(team.id).slice(0, 4).map((player) => (
+                      {teamSquad.slice(0, 4).map((player) => (
                         <div
                           key={player.id}
                           className="h-7 w-7 rounded-full overflow-hidden border-2 border-[#121212] bg-[#1A1A1A] shrink-0 shadow-xs"
@@ -722,9 +741,9 @@ function LandingScreen() {
                           />
                         </div>
                       ))}
-                      {lookup.playersOf(team.id).length > 4 && (
+                      {teamSquad.length > 4 && (
                         <div className="h-7 px-1.5 rounded-full bg-white/10 border-2 border-[#121212] flex items-center justify-center text-[9px] font-black text-white/80">
-                          +{lookup.playersOf(team.id).length - 4}
+                          +{teamSquad.length - 4}
                         </div>
                       )}
                     </div>
@@ -745,15 +764,22 @@ function LandingScreen() {
       {/* ── Team Roster Interactive Modal ─────────────────────────────────── */}
       {selectedTeamForRoster && (() => {
         const rosterPlayers = (() => {
-          const direct = lookup.playersOf(selectedTeamForRoster.id);
-          if (direct.length > 0) return direct;
-          const fromState = players.filter(
-            (p) => p.teamId === selectedTeamForRoster.id || p.teamId === selectedTeamForRoster.slug
-          );
-          if (fromState.length > 0) return fromState;
-          return lookup.players().filter(
-            (p) => p.teamId === selectedTeamForRoster.id || p.teamId === selectedTeamForRoster.slug
-          );
+          if (!selectedTeamForRoster) return [];
+          const validTargets = new Set<string>();
+          if (selectedTeamForRoster.id) validTargets.add(selectedTeamForRoster.id.toLowerCase().trim());
+          if (selectedTeamForRoster.slug) validTargets.add(selectedTeamForRoster.slug.toLowerCase().trim());
+          if (selectedTeamForRoster.shortName) validTargets.add(selectedTeamForRoster.shortName.toLowerCase().trim());
+          if (selectedTeamForRoster.name) {
+            validTargets.add(selectedTeamForRoster.name.toLowerCase().trim());
+            validTargets.add(selectedTeamForRoster.name.toLowerCase().trim().replace(/[^a-z0-9]+/g, "-"));
+          }
+
+          const matching = players.filter((p) => {
+            if (!p.teamId || p.teamId.trim() === "") return false;
+            return validTargets.has(p.teamId.toLowerCase().trim());
+          });
+
+          return matching.length > 0 ? matching : lookup.playersOf(selectedTeamForRoster.id);
         })();
 
         return (

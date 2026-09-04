@@ -394,14 +394,22 @@ class LookupCache {
   }
 
   playersOf(teamIdOrSlug: string): Player[] {
+    if (!teamIdOrSlug || teamIdOrSlug.trim() === "") return [];
     const resolvedTeam = this.team(teamIdOrSlug);
-    const validIds = new Set<string>([teamIdOrSlug]);
+    const validTargets = new Set<string>([teamIdOrSlug.toLowerCase().trim()]);
     if (resolvedTeam) {
-      validIds.add(resolvedTeam.id);
-      if (resolvedTeam.slug) validIds.add(resolvedTeam.slug);
-      if (resolvedTeam.name) validIds.add(resolvedTeam.name);
+      if (resolvedTeam.id) validTargets.add(resolvedTeam.id.toLowerCase().trim());
+      if (resolvedTeam.slug) validTargets.add(resolvedTeam.slug.toLowerCase().trim());
+      if (resolvedTeam.shortName) validTargets.add(resolvedTeam.shortName.toLowerCase().trim());
+      if (resolvedTeam.name) {
+        validTargets.add(resolvedTeam.name.toLowerCase().trim());
+        validTargets.add(resolvedTeam.name.toLowerCase().trim().replace(/[^a-z0-9]+/g, "-"));
+      }
     }
-    return Array.from(this.playersMap.values()).filter((p) => p.teamId && validIds.has(p.teamId));
+    return Array.from(this.playersMap.values()).filter((p) => {
+      if (!p.teamId || p.teamId.trim() === "") return false;
+      return validTargets.has(p.teamId.toLowerCase().trim());
+    });
   }
 
   match(id: string): Match | undefined {
