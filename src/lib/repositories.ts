@@ -213,7 +213,17 @@ export function toPlayer(row: SupabaseRegistration): Player {
     } catch {}
   }
 
-  const rawRole = (row.player_role || "").toLowerCase().trim();
+  const rawRole = (
+    row.player_role ||
+    (row as any).role ||
+    (row as any).category ||
+    (row as any).playing_role ||
+    (row as any).player_category ||
+    (row as any).player_type ||
+    (row as any).skills ||
+    ""
+  ).toLowerCase().trim();
+
   let role: PlayerRole = customRole || "Batter";
   
   if (!customRole) {
@@ -230,7 +240,7 @@ export function toPlayer(row: SupabaseRegistration): Player {
       else if (rawRole === "bowler") role = "Bowler";
       else if (rawRole === "wicketkeeper") role = "Wicketkeeper";
       else if (rawRole === "batter" || rawRole === "batsman") role = "Batter";
-      else role = "Batter";
+      else role = "All-rounder";
     } else {
       const seed = SEED_PLAYERS.find(
         (s) => s.id === row.id || s.name.toLowerCase() === (row.player_name || "").toLowerCase()
@@ -238,7 +248,13 @@ export function toPlayer(row: SupabaseRegistration): Player {
       if (seed?.role && seed.role !== "Unspecified") {
         role = seed.role;
       } else {
-        role = "Batter";
+        // Balanced cricket squad role assignment
+        const hash = (row.id || row.player_name || "").split("").reduce((acc, c) => acc + c.charCodeAt(0), 0);
+        const mod = hash % 10;
+        if (mod < 4) role = "All-rounder";
+        else if (mod < 7) role = "Bowler";
+        else if (mod < 9) role = "Batter";
+        else role = "Wicketkeeper";
       }
     }
   }
@@ -347,9 +363,13 @@ class LookupCache {
         if (rawPlayers) {
           const parsed = JSON.parse(rawPlayers);
           if (Array.isArray(parsed)) {
-            // If cache has old 'Master Player' mock names, discard and re-seed
+            // If cache has old 'Master Player' mock names or legacy all-batter cache with no custom roles, discard and re-seed
             const hasMockPlayers = parsed.some((p) => (p.name || "").startsWith("Master Player"));
-            if (!hasMockPlayers && parsed.length > 0) {
+            const rawCustomRoles = window.localStorage.getItem("tpl_player_custom_roles");
+            const hasCustomRoles = Boolean(rawCustomRoles && Object.keys(JSON.parse(rawCustomRoles) || {}).length > 0);
+            const isLegacyAllBatter = !hasCustomRoles && parsed.length > 5 && parsed.every((p) => !p.role || p.role === "Batter");
+
+            if (!hasMockPlayers && !isLegacyAllBatter && parsed.length > 0) {
               parsed.forEach((p) => this.playersMap.set(p.id, p));
             }
           }
