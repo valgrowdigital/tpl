@@ -672,7 +672,7 @@ function LandingScreen() {
                       {team.groupName || "GROUP STAGE"}
                     </span>
                     <span className="text-[10px] font-mono font-bold text-white/40 tracking-wider">
-                      {teamPlayers.length} {teamPlayers.length === 1 ? "PLAYER" : "PLAYERS"}
+                      {lookup.playersOf(team.id).length} {lookup.playersOf(team.id).length === 1 ? "PLAYER" : "PLAYERS"}
                     </span>
                   </div>
 
@@ -684,16 +684,14 @@ function LandingScreen() {
                         className="absolute inset-0 rounded-full blur-xl opacity-40 group-hover:opacity-80 transition-opacity"
                         style={{ backgroundColor: theme.color }}
                       />
-                      <div className="relative h-28 w-28 sm:h-32 sm:w-32 rounded-full p-1.5 bg-[#0A0A0A] border-2 border-white/20 group-hover:border-white/60 shadow-2xl flex items-center justify-center overflow-hidden">
-                        {team.logoUrl ? (
-                          <img
-                            src={team.logoUrl}
-                            alt={team.name}
-                            className="w-full h-full object-cover rounded-full"
-                          />
-                        ) : (
-                          <TeamLogo logoUrl={team.logoUrl} name={team.name} shortName={team.shortName} size="lg" />
-                        )}
+                      <div className="relative h-28 w-28 sm:h-32 sm:w-32 rounded-full p-1 bg-[#0A0A0A] border-2 border-white/20 group-hover:border-[#D9A928]/80 shadow-2xl flex items-center justify-center overflow-hidden">
+                        <TeamLogo
+                          teamId={team.id}
+                          logoUrl={team.logoUrl}
+                          name={team.name}
+                          shortName={team.shortName}
+                          className="w-full h-full rounded-full border-0 object-cover"
+                        />
                       </div>
                     </div>
 
@@ -711,7 +709,7 @@ function LandingScreen() {
                   {/* Squad Preview: Overlapping Player Avatars */}
                   <div className="relative z-10 border-t border-white/10 pt-4 mt-2 flex items-center justify-between">
                     <div className="flex items-center -space-x-2">
-                      {previewPlayers.map((player) => (
+                      {lookup.playersOf(team.id).slice(0, 4).map((player) => (
                         <div
                           key={player.id}
                           className="h-7 w-7 rounded-full overflow-hidden border-2 border-[#121212] bg-[#1A1A1A] shrink-0 shadow-xs"
@@ -724,9 +722,9 @@ function LandingScreen() {
                           />
                         </div>
                       ))}
-                      {teamPlayers.length > 4 && (
+                      {lookup.playersOf(team.id).length > 4 && (
                         <div className="h-7 px-1.5 rounded-full bg-white/10 border-2 border-[#121212] flex items-center justify-center text-[9px] font-black text-white/80">
-                          +{teamPlayers.length - 4}
+                          +{lookup.playersOf(team.id).length - 4}
                         </div>
                       )}
                     </div>
@@ -745,59 +743,67 @@ function LandingScreen() {
       </section>
 
       {/* ── Team Roster Interactive Modal ─────────────────────────────────── */}
-      {selectedTeamForRoster && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/85 backdrop-blur-md p-4 animate-in fade-in duration-200">
-          <div className="w-full max-w-2xl bg-[#141414] border border-white/15 rounded-3xl p-6 sm:p-8 flex flex-col gap-6 shadow-2xl overflow-hidden max-h-[90vh]">
-            {/* Modal Header */}
-            <div className="flex items-center justify-between border-b border-white/10 pb-4">
-              <div className="flex items-center gap-4">
-                <div className="h-16 w-16 rounded-2xl overflow-hidden border-2 border-[#D9A928]/40 bg-black/50 shrink-0 p-1 flex items-center justify-center">
-                  {selectedTeamForRoster.logoUrl ? (
-                    <img
-                      src={selectedTeamForRoster.logoUrl}
-                      alt={selectedTeamForRoster.name}
-                      className="w-full h-full object-cover rounded-xl"
+      {selectedTeamForRoster && (() => {
+        const rosterPlayers = (() => {
+          const direct = lookup.playersOf(selectedTeamForRoster.id);
+          if (direct.length > 0) return direct;
+          const fromState = players.filter(
+            (p) => p.teamId === selectedTeamForRoster.id || p.teamId === selectedTeamForRoster.slug
+          );
+          if (fromState.length > 0) return fromState;
+          return lookup.players().filter(
+            (p) => p.teamId === selectedTeamForRoster.id || p.teamId === selectedTeamForRoster.slug
+          );
+        })();
+
+        return (
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/85 backdrop-blur-md p-4 animate-in fade-in duration-200">
+            <div className="w-full max-w-2xl bg-[#141414] border border-white/15 rounded-3xl p-6 sm:p-8 flex flex-col gap-6 shadow-2xl overflow-hidden max-h-[90vh]">
+              {/* Modal Header */}
+              <div className="flex items-center justify-between border-b border-white/10 pb-4">
+                <div className="flex items-center gap-4">
+                  <div className="h-16 w-16 rounded-2xl overflow-hidden border-2 border-[#D9A928]/40 bg-black/50 shrink-0 p-0.5 flex items-center justify-center">
+                    <TeamLogo
+                      teamId={selectedTeamForRoster.id}
+                      logoUrl={selectedTeamForRoster.logoUrl}
+                      name={selectedTeamForRoster.name}
+                      className="w-full h-full rounded-xl border-0"
                     />
-                  ) : (
-                    <TeamLogo logoUrl={selectedTeamForRoster.logoUrl} name={selectedTeamForRoster.name} size="md" />
-                  )}
-                </div>
-                <div>
-                  <div className="flex items-center gap-2">
-                    <span className="text-[10px] font-black uppercase tracking-widest text-[#D9A928] bg-[#D9A928]/10 px-2 py-0.5 rounded-md border border-[#D9A928]/30">
-                      {selectedTeamForRoster.groupName || "OFFICIAL FRANCHISE"}
-                    </span>
                   </div>
-                  <h3 className="text-xl sm:text-2xl font-black uppercase text-white mt-1">
-                    {selectedTeamForRoster.name}
-                  </h3>
-                  {selectedTeamForRoster.ownerName && (
-                    <p className="text-xs text-white/60 font-medium">Franchise Owner: {selectedTeamForRoster.ownerName}</p>
-                  )}
+                  <div>
+                    <div className="flex items-center gap-2">
+                      <span className="text-[10px] font-black uppercase tracking-widest text-[#D9A928] bg-[#D9A928]/10 px-2 py-0.5 rounded-md border border-[#D9A928]/30">
+                        {selectedTeamForRoster.groupName || "OFFICIAL FRANCHISE"}
+                      </span>
+                    </div>
+                    <h3 className="text-xl sm:text-2xl font-black uppercase text-white mt-1">
+                      {selectedTeamForRoster.name}
+                    </h3>
+                    {selectedTeamForRoster.ownerName && (
+                      <p className="text-xs text-white/60 font-medium">Franchise Owner: {selectedTeamForRoster.ownerName}</p>
+                    )}
+                  </div>
                 </div>
+
+                <button
+                  onClick={() => setSelectedTeamForRoster(null)}
+                  className="p-2.5 rounded-xl bg-white/5 hover:bg-white/10 text-white/60 hover:text-white transition-colors cursor-pointer"
+                >
+                  <X className="h-5 w-5" />
+                </button>
               </div>
 
-              <button
-                onClick={() => setSelectedTeamForRoster(null)}
-                className="p-2.5 rounded-xl bg-white/5 hover:bg-white/10 text-white/60 hover:text-white transition-colors cursor-pointer"
-              >
-                <X className="h-5 w-5" />
-              </button>
-            </div>
+              {/* Squad Player List */}
+              <div className="flex-1 overflow-y-auto pr-1">
+                <div className="flex items-center justify-between mb-3">
+                  <h4 className="text-xs font-black uppercase tracking-widest text-white/60">
+                    Official Squad Players ({rosterPlayers.length})
+                  </h4>
+                  <span className="text-[10px] text-[#D9A928] font-bold">Tap player to view profile</span>
+                </div>
 
-            {/* Squad Player List */}
-            <div className="flex-1 overflow-y-auto pr-1">
-              <div className="flex items-center justify-between mb-3">
-                <h4 className="text-xs font-black uppercase tracking-widest text-white/60">
-                  Official Squad Players ({players.filter((p) => p.teamId === selectedTeamForRoster.id).length})
-                </h4>
-                <span className="text-[10px] text-[#D9A928] font-bold">Tap player to view profile</span>
-              </div>
-
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
-                {players
-                  .filter((p) => p.teamId === selectedTeamForRoster.id)
-                  .map((player) => (
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+                  {rosterPlayers.map((player) => (
                     <Link
                       key={player.id}
                       to="/player/$playerId"
@@ -832,14 +838,14 @@ function LandingScreen() {
                       <ChevronRight className="h-4 w-4 text-white/30 group-hover:text-[#D9A928] transition-colors" />
                     </Link>
                   ))}
-              </div>
-
-              {players.filter((p) => p.teamId === selectedTeamForRoster.id).length === 0 && (
-                <div className="p-8 text-center bg-white/5 rounded-2xl border border-white/10 text-xs font-bold text-white/50">
-                  No squad players registered yet for this franchise.
                 </div>
-              )}
-            </div>
+
+                {rosterPlayers.length === 0 && (
+                  <div className="p-8 text-center bg-white/5 rounded-2xl border border-white/10 text-xs font-bold text-white/50">
+                    No squad players registered yet for this franchise.
+                  </div>
+                )}
+              </div>
 
             {/* Modal Footer */}
             <div className="pt-3 border-t border-white/10 flex items-center justify-between">
@@ -860,7 +866,8 @@ function LandingScreen() {
             </div>
           </div>
         </div>
-      )}
+      );
+    })()}
 
 
       {/* ══════════════════════════════════════════════════════════════════════

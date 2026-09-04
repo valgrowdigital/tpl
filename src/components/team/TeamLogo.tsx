@@ -50,6 +50,50 @@ function deriveInitials(displayName: string, shortCode?: string): string {
   return words.map((w) => w[0]?.toUpperCase() || "").join("").slice(0, 3);
 }
 
+// Authoritative team logo mappings for all TPL teams
+const TEAM_AUTH_LOGOS: Record<string, string> = {
+  // UUIDs
+  "832b3866-046c-4beb-970a-4d79cc72ba37": "https://emlhfbbkwdpmdodjruje.supabase.co/storage/v1/object/public/team_logos/bary-mawathe-royals-1787119875442.jpg",
+  "edcc603d-db13-4191-813c-44abb06c883c": "https://emlhfbbkwdpmdodjruje.supabase.co/storage/v1/object/public/team_logos/thundu-capital-1787056530318.jpg",
+  "c1397164-6f86-4639-93e6-888e0091bb51": "https://emlhfbbkwdpmdodjruje.supabase.co/storage/v1/object/public/team_logos/kurunduwatte-legends-1787056610757.jpg",
+  "9d930c5d-c96b-43ef-8be7-fed8c71133df": "https://emlhfbbkwdpmdodjruje.supabase.co/storage/v1/object/public/team_logos/riverside-kings-1787056582474.jpg",
+  "f36ace20-1b45-43e4-be94-7a0f8a678fd9": "https://emlhfbbkwdpmdodjruje.supabase.co/storage/v1/object/public/team_logos/new-garden-warriors-1787056599415.jpg",
+  "53a3ea75-b3cf-4908-a19b-d3f3b693b3fd": "https://emlhfbbkwdpmdodjruje.supabase.co/storage/v1/object/public/team_logos/dainagoda-united-1787056544338.jpg",
+
+  // Slugs
+  "bary-mawathe-royals": "https://emlhfbbkwdpmdodjruje.supabase.co/storage/v1/object/public/team_logos/bary-mawathe-royals-1787119875442.jpg",
+  "thundu-capital": "https://emlhfbbkwdpmdodjruje.supabase.co/storage/v1/object/public/team_logos/thundu-capital-1787056530318.jpg",
+  "kurunduwatte-legends": "https://emlhfbbkwdpmdodjruje.supabase.co/storage/v1/object/public/team_logos/kurunduwatte-legends-1787056610757.jpg",
+  "riverside-kings": "https://emlhfbbkwdpmdodjruje.supabase.co/storage/v1/object/public/team_logos/riverside-kings-1787056582474.jpg",
+  "new-garden-warriors": "https://emlhfbbkwdpmdodjruje.supabase.co/storage/v1/object/public/team_logos/new-garden-warriors-1787056599415.jpg",
+  "dainagoda-united": "https://emlhfbbkwdpmdodjruje.supabase.co/storage/v1/object/public/team_logos/dainagoda-united-1787056544338.jpg",
+
+  // Aliases
+  "team-bmr": "https://emlhfbbkwdpmdodjruje.supabase.co/storage/v1/object/public/team_logos/bary-mawathe-royals-1787119875442.jpg",
+  "team-tc": "https://emlhfbbkwdpmdodjruje.supabase.co/storage/v1/object/public/team_logos/thundu-capital-1787056530318.jpg",
+  "team-kl": "https://emlhfbbkwdpmdodjruje.supabase.co/storage/v1/object/public/team_logos/kurunduwatte-legends-1787056610757.jpg",
+  "team-rk": "https://emlhfbbkwdpmdodjruje.supabase.co/storage/v1/object/public/team_logos/riverside-kings-1787056582474.jpg",
+  "team-ngw": "https://emlhfbbkwdpmdodjruje.supabase.co/storage/v1/object/public/team_logos/new-garden-warriors-1787056599415.jpg",
+  "team-du": "https://emlhfbbkwdpmdodjruje.supabase.co/storage/v1/object/public/team_logos/dainagoda-united-1787056544338.jpg",
+
+  // Short Codes
+  "bmr": "https://emlhfbbkwdpmdodjruje.supabase.co/storage/v1/object/public/team_logos/bary-mawathe-royals-1787119875442.jpg",
+  "tc": "https://emlhfbbkwdpmdodjruje.supabase.co/storage/v1/object/public/team_logos/thundu-capital-1787056530318.jpg",
+  "kl": "https://emlhfbbkwdpmdodjruje.supabase.co/storage/v1/object/public/team_logos/kurunduwatte-legends-1787056610757.jpg",
+  "rk": "https://emlhfbbkwdpmdodjruje.supabase.co/storage/v1/object/public/team_logos/riverside-kings-1787056582474.jpg",
+  "ngw": "https://emlhfbbkwdpmdodjruje.supabase.co/storage/v1/object/public/team_logos/new-garden-warriors-1787056599415.jpg",
+  "du": "https://emlhfbbkwdpmdodjruje.supabase.co/storage/v1/object/public/team_logos/dainagoda-united-1787056544338.jpg",
+};
+
+export function getAuthoritativeLogo(identifier?: string): string | undefined {
+  if (!identifier) return undefined;
+  const clean = identifier.toLowerCase().trim();
+  if (TEAM_AUTH_LOGOS[clean]) return TEAM_AUTH_LOGOS[clean];
+  const slugified = clean.replace(/[^a-z0-9]+/g, "-");
+  if (TEAM_AUTH_LOGOS[slugified]) return TEAM_AUTH_LOGOS[slugified];
+  return undefined;
+}
+
 export function TeamLogo({
   teamId,
   teamName,
@@ -64,9 +108,17 @@ export function TeamLogo({
 
   // Auto-resolve team metadata from repository if teamId is provided
   const resolvedTeam = teamId ? lookup.team(teamId) : undefined;
-  const effectiveLogoUrl = propLogoUrl || resolvedTeam?.logoUrl;
   const effectiveName = propName || teamName || resolvedTeam?.name || "Team";
   const effectiveShortName = propShortName || resolvedTeam?.shortName;
+
+  const fallbackLogo =
+    getAuthoritativeLogo(teamId) ||
+    getAuthoritativeLogo(resolvedTeam?.slug) ||
+    getAuthoritativeLogo(resolvedTeam?.id) ||
+    getAuthoritativeLogo(effectiveName) ||
+    getAuthoritativeLogo(effectiveShortName);
+
+  const effectiveLogoUrl = propLogoUrl || resolvedTeam?.logoUrl || fallbackLogo;
   const initials = deriveInitials(effectiveName, effectiveShortName);
   const sizeClass = SIZE_CLASSES[size] || SIZE_CLASSES.md;
   const gradient = getTeamGradient(teamId || effectiveName);

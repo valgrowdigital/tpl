@@ -21,6 +21,8 @@ import {
   updateMatchStatusServerFn,
   updateMatchOversServerFn,
 } from "@/lib/server-fns/matches";
+import { SEED_TEAMS, SEED_PLAYERS } from "./seedData";
+import { getAuthoritativeLogo } from "@/components/team/TeamLogo";
 
 export const TOURNAMENT_NAME = "TPL 2026";
 const REQUEST_TIMEOUT_MS = 3500; // 3.5 seconds maximum timeout
@@ -72,11 +74,12 @@ function derivePlayerShortName(fullName: string): string {
 }
 
 export function toTeam(row: SupabaseTeam): Team {
+  const fallbackLogo = getAuthoritativeLogo(row.id) || getAuthoritativeLogo(row.slug) || getAuthoritativeLogo(row.name);
   return {
     id: row.id,
     name: row.name,
     shortName: deriveTeamShortName(row.name, row.slug),
-    logoUrl: row.logo_url ?? undefined,
+    logoUrl: row.logo_url ?? fallbackLogo,
     ownerName: row.owner_name ?? undefined,
     groupName: row.group_name ?? undefined,
     purseBalance: row.purse_balance ?? undefined,
@@ -207,9 +210,23 @@ class LookupCache {
         const rawPlayers = window.localStorage.getItem(CACHE_PLAYERS_KEY);
         if (rawPlayers) {
           const parsed = JSON.parse(rawPlayers);
-          if (Array.isArray(parsed)) parsed.forEach((p) => this.playersMap.set(p.id, p));
+          if (Array.isArray(parsed)) {
+            // If cache has old 'Master Player' mock names, discard and re-seed
+            const hasMockPlayers = parsed.some((p) => (p.name || "").startsWith("Master Player"));
+            if (!hasMockPlayers && parsed.length > 0) {
+              parsed.forEach((p) => this.playersMap.set(p.id, p));
+            }
+          }
         }
       } catch {}
+    }
+
+    // Default initialization if empty
+    if (this.teamsMap.size === 0) {
+      SEED_TEAMS.forEach((t) => this.teamsMap.set(t.id, t));
+    }
+    if (this.playersMap.size === 0) {
+      SEED_PLAYERS.forEach((p) => this.playersMap.set(p.id, p));
     }
   }
 
@@ -284,9 +301,24 @@ class LookupCache {
     return updated;
   }
 
-  team(id?: string): Team | undefined {
-    if (!id) return undefined;
-    return this.teamsMap.get(id);
+  team(idOrSlug?: string): Team | undefined {
+    if (!idOrSlug) return undefined;
+    const direct = this.teamsMap.get(idOrSlug);
+    if (direct) return direct;
+
+    const normalized = idOrSlug.toLowerCase().trim();
+    for (const t of this.teamsMap.values()) {
+      if (
+        t.id === idOrSlug ||
+        (t.slug && t.slug.toLowerCase() === normalized) ||
+        (t.shortName && t.shortName.toLowerCase() === normalized) ||
+        t.name.toLowerCase() === normalized ||
+        t.name.toLowerCase().replace(/[^a-z0-9]+/g, "-") === normalized
+      ) {
+        return t;
+      }
+    }
+    return undefined;
   }
 
   player(idOrSlug?: string): Player | undefined {
@@ -343,8 +375,14 @@ class LookupCache {
     return undefined;
   }
 
-  playersOf(teamId: string): Player[] {
-    return Array.from(this.playersMap.values()).filter((p) => p.teamId === teamId);
+  playersOf(teamIdOrSlug: string): Player[] {
+    const resolvedTeam = this.team(teamIdOrSlug);
+    const validIds = new Set<string>([teamIdOrSlug]);
+    if (resolvedTeam) {
+      validIds.add(resolvedTeam.id);
+      if (resolvedTeam.slug) validIds.add(resolvedTeam.slug);
+    }
+    return Array.from(this.playersMap.values()).filter((p) => p.teamId && validIds.has(p.teamId));
   }
 
   match(id: string): Match | undefined {
@@ -432,22 +470,7 @@ export interface MatchRepository {
   }): Promise<Match>;
 }
 
-// ── Fallback Seed Teams & Players for Zero-Config Development ────────────────
-export const SEED_TEAMS: Team[] = [
-  { id: "team-du", name: "Dainagoda United", shortName: "DU", groupName: "Group 1" },
-  { id: "team-bmr", name: "Bary Mawathe Royals", shortName: "BMR", groupName: "Group 1" },
-  { id: "team-kl", name: "Kurunduwatte Legends", shortName: "KL", groupName: "Group 1" },
-  { id: "team-ngw", name: "New Garden Warriors", shortName: "NGW", groupName: "Group 2" },
-  { id: "team-rk", name: "Riverside Kings", shortName: "RK", groupName: "Group 2" },
-  { id: "team-tc", name: "Thundu Capital", shortName: "TC", groupName: "Group 2" },
-];
-
-export const SEED_PLAYERS: Player[] = Array.from({ length: 89 }, (_, i) => ({
-  id: `player-${i + 1}`,
-  name: `Master Player ${i + 1}`,
-  teamId: SEED_TEAMS[i % 6].id,
-  role: i % 3 === 0 ? "Batter" : i % 3 === 1 ? "Bowler" : "Wicketkeeper",
-}));
+export { SEED_TEAMS, SEED_PLAYERS };
 
 // Initialize lookup cache with defaults if empty
 if (lookup.teams().length === 0) {
