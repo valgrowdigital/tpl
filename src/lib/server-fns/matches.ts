@@ -1,8 +1,67 @@
 import { createServerFn } from "@tanstack/react-start";
 import { getServerSupabaseAdmin } from "@/lib/server/supabase-admin";
-import type { SupabaseMatch } from "@/types/cricket";
+import type { SupabaseMatch, SupabaseTeam } from "@/types/cricket";
 import { BALLS_PER_OVER, getTeamGroup } from "@/types/cricket";
-import { teamRepository } from "@/lib/repositories";
+import { SEED_TEAMS } from "@/lib/seedData";
+import { getTeamCanonicalKey } from "@/lib/repositories";
+
+/**
+ * Authoritatively resolves a team input (UUID, canonical slug, short code, or name)
+ * against the live database or official seed teams.
+ */
+async function resolveOfficialTeam(
+  idOrSlugOrName: string,
+  supabaseAdmin = getServerSupabaseAdmin(),
+): Promise<SupabaseTeam | null> {
+  if (!idOrSlugOrName || !idOrSlugOrName.trim()) return null;
+  const target = idOrSlugOrName.trim();
+  const canonical = getTeamCanonicalKey(target);
+
+  // 1. Query live database teams
+  try {
+    const { data: dbTeams } = await supabaseAdmin.from("teams").select("*");
+    if (dbTeams && dbTeams.length > 0) {
+      const match = (dbTeams as SupabaseTeam[]).find(
+        (t) =>
+          t.id === target ||
+          t.slug === target ||
+          t.name.toLowerCase() === target.toLowerCase() ||
+          getTeamCanonicalKey(t.id) === canonical ||
+          getTeamCanonicalKey(t.slug) === canonical ||
+          getTeamCanonicalKey(t.name) === canonical,
+      );
+      if (match) return match;
+    }
+  } catch (err) {
+    console.warn("[resolveOfficialTeam] Database fetch notice:", err);
+  }
+
+  // 2. Fallback to SEED_TEAMS
+  const seedMatch = SEED_TEAMS.find(
+    (t) =>
+      t.id === target ||
+      t.slug === target ||
+      t.name.toLowerCase() === target.toLowerCase() ||
+      getTeamCanonicalKey(t.id) === canonical ||
+      getTeamCanonicalKey(t.slug) === canonical ||
+      getTeamCanonicalKey(t.name) === canonical,
+  );
+
+  if (seedMatch) {
+    return {
+      id: seedMatch.id,
+      name: seedMatch.name,
+      slug: seedMatch.slug || null,
+      logo_url: seedMatch.logoUrl || null,
+      owner_name: seedMatch.ownerName || null,
+      group_name: seedMatch.groupName || null,
+      purse_balance: seedMatch.purseBalance || 0,
+      created_at: new Date().toISOString(),
+    } as SupabaseTeam;
+  }
+
+  return null;
+}
 
 export interface FixtureInput {
   id?: string;
@@ -300,24 +359,23 @@ export const generateTournamentScheduleServerFn = createServerFn({ method: "POST
       throw new Error("All 6 selected tournament teams must be distinct.");
     }
 
-    // Verify team group assignments from database
-    const { data: dbTeams, error: teamsFetchError } = await supabaseAdmin
-      .from("teams")
-      .select("id, name, slug")
-      .in("id", allTeams);
+    // Resolve all group teams to ensure valid DB IDs
+    const resolvedG1 = await Promise.all(input.group1TeamIds.map((id) => resolveOfficialTeam(id, supabaseAdmin)));
+    const resolvedG2 = await Promise.all(input.group2TeamIds.map((id) => resolveOfficialTeam(id, supabaseAdmin)));
 
-    if (!teamsFetchError && dbTeams && dbTeams.length > 0) {
-      for (const tId of input.group1TeamIds) {
-        const t = dbTeams.find((item) => item.id === tId);
-        if (t && getTeamGroup(t) !== "Group 1") {
-          throw new Error(`Invalid schedule: Team "${t.name}" belongs to Group 2 and cannot be assigned to Group 1.`);
-        }
+    if (resolvedG1.some((t) => !t) || resolvedG2.some((t) => !t)) {
+      throw new Error("All selected schedule teams must be valid official tournament teams.");
+    }
+
+    // Verify group allocations
+    for (const t of resolvedG1) {
+      if (t && getTeamGroup(t) !== "Group 1") {
+        throw new Error(`Invalid schedule: Team "${t.name}" belongs to Group 2 and cannot be assigned to Group 1.`);
       }
-      for (const tId of input.group2TeamIds) {
-        const t = dbTeams.find((item) => item.id === tId);
-        if (t && getTeamGroup(t) !== "Group 2") {
-          throw new Error(`Invalid schedule: Team "${t.name}" belongs to Group 1 and cannot be assigned to Group 2.`);
-        }
+    }
+    for (const t of resolvedG2) {
+      if (t && getTeamGroup(t) !== "Group 2") {
+        throw new Error(`Invalid schedule: Team "${t.name}" belongs to Group 1 and cannot be assigned to Group 2.`);
       }
     }
 
@@ -343,20 +401,8 @@ export const generateTournamentScheduleServerFn = createServerFn({ method: "POST
     const baseDate = new Date(y, (m || 1) - 1, d || 1, hours, minutes, 0, 0);
 
     const fixturesToInsert: Omit<SupabaseMatch, "id" | "created_at" | "updated_at">[] = [];
-    let matchCount = 1;
 
     // Optimal zero back-to-back cross-group scheduling sequence:
-    // With Group 1 = [A, B, C] and Group 2 = [X, Y, Z]:
-    // Match 1: A vs X (A, X playing; B, C, Y, Z resting)
-    // Match 2: B vs Y (B, Y playing; A, C, X, Z resting)
-    // Match 3: C vs Z (C, Z playing; A, B, X, Y resting)
-    // Match 4: A vs Y (A, Y playing; B, C, X, Z resting)
-    // Match 5: B vs Z (B, Z playing; A, C, X, Y resting)
-    // Match 6: C vs X (C, X playing; A, B, Y, Z resting)
-    // Match 7: A vs Z (A, Z playing; B, C, X, Y resting)
-    // Match 8: B vs X (B, X playing; A, C, Y, Z resting)
-    // Match 9: C vs Y (C, Y playing; A, B, X, Z resting)
-    // Every consecutive match pair shares 0 teams, ensuring full 1-match rest between games for all teams.
     const fixtureIndexPairs: [number, number][] = [
       [0, 0],
       [1, 1],
@@ -374,8 +420,8 @@ export const generateTournamentScheduleServerFn = createServerFn({ method: "POST
       const scheduledTime = new Date(baseDate.getTime() + idx * intervalMinutes * 60 * 1000);
       const pin = generate4DigitPin(activePins);
       fixturesToInsert.push({
-        team_a_id: input.group1TeamIds[g1Idx],
-        team_b_id: input.group2TeamIds[g2Idx],
+        team_a_id: resolvedG1[g1Idx]!.id,
+        team_b_id: resolvedG2[g2Idx]!.id,
         start_time: scheduledTime.toISOString(),
         status: "scheduled",
         total_overs: overs,
@@ -425,13 +471,16 @@ export const createSingleMatchServerFn = createServerFn({ method: "POST" })
       throw new Error("Team 1 and Team 2 cannot be the same team.");
     }
 
-    // 2. Validate official teams existence & cross-group requirement
-    const teams = await teamRepository.list();
-    const teamA = teams.find((t) => t.id === input.teamAId);
-    const teamB = teams.find((t) => t.id === input.teamBId);
+    // 2. Validate and resolve official teams
+    const teamA = await resolveOfficialTeam(input.teamAId, supabaseAdmin);
+    const teamB = await resolveOfficialTeam(input.teamBId, supabaseAdmin);
 
     if (!teamA || !teamB) {
       throw new Error("Selected teams must be valid official tournament teams.");
+    }
+
+    if (teamA.id === teamB.id) {
+      throw new Error("Team 1 and Team 2 cannot be the same team.");
     }
 
     // 3. Validate scheduled date and time
@@ -454,8 +503,8 @@ export const createSingleMatchServerFn = createServerFn({ method: "POST" })
     const assignedPin = input.scorerPin?.trim() || generate4DigitPin(activePins);
 
     const row: Omit<SupabaseMatch, "id" | "created_at" | "updated_at"> = {
-      team_a_id: input.teamAId,
-      team_b_id: input.teamBId,
+      team_a_id: teamA.id,
+      team_b_id: teamB.id,
       start_time: parsedDate.toISOString(),
       status: "scheduled",
       total_overs: overs,
