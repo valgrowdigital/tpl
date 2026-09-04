@@ -1757,16 +1757,17 @@ function AdminPortalPage() {
                                     message = `TPL 2026 Match ${numSymbol}: ${teamAName} vs ${teamBName}`;
                                   }
 
-                                  await mod.sendWhatsAppNotification(eventId, message);
+                                  const res = await mod.sendWhatsAppNotification(eventId, message);
+                                  const successMsg = res.method === "api" ? "✓ WhatsApp notification sent" : "✓ WhatsApp opened with match details";
                                   
-                                  setWaSendStatus(prev => ({ ...prev, [m.id]: { loading: false, message: "✓ WhatsApp notification sent", error: false } }));
+                                  setWaSendStatus(prev => ({ ...prev, [m.id]: { loading: false, message: successMsg, error: false } }));
                                   setTimeout(() => {
                                     setWaSendStatus(prev => {
                                       const copy = { ...prev };
                                       delete copy[m.id];
                                       return copy;
                                     });
-                                  }, 3000);
+                                  }, 4000);
                                 } catch (err: any) {
                                   setWaSendStatus(prev => ({ ...prev, [m.id]: { loading: false, message: `WhatsApp notification failed: ${err.message}`, error: true } }));
                                   setTimeout(() => {

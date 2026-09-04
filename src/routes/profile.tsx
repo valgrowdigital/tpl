@@ -1,20 +1,20 @@
 import { useState } from "react";
 import { createFileRoute, useNavigate, Link } from "@tanstack/react-router";
 import { AppShell } from "@/components/layout/AppShell";
-import { useTournamentStats } from "@/hooks/useCricketData";
-import { useScorerAuth, useAdminAuth } from "@/lib/auth";
+import { useTournamentStats, useMatches } from "@/hooks/useCricketData";
+import { useScorerAuth, useAdminAuth, authorizeMatchScorer } from "@/lib/auth";
 import {
   User,
   Database,
   ShieldCheck,
   RefreshCw,
   Lock,
-  Mail,
   Key,
   ArrowRight,
   LogOut,
   AlertCircle,
   CheckCircle2,
+  Calendar,
 } from "lucide-react";
 
 export const Route = createFileRoute("/profile")({
@@ -23,51 +23,64 @@ export const Route = createFileRoute("/profile")({
 
 function ProfilePage() {
   const stats = useTournamentStats();
-  const { isAuthenticated, userEmail, loginWithPassword, loginWithPin, logout, isLoading } = useScorerAuth();
+  const { data: allMatches = [] } = useMatches();
+  const { isAuthenticated, userEmail, loginWithPin, logout, isLoading } = useScorerAuth();
   const { isAdminAuthenticated, adminEmail } = useAdminAuth();
   const navigate = useNavigate();
 
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
   const [pin, setPin] = useState("");
-  const [authMode, setAuthMode] = useState<"password" | "pin">("password");
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
-
-  const handlePasswordSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setErrorMsg(null);
-    if (!email || !password) {
-      setErrorMsg("Please enter both email and password.");
-      return;
-    }
-
-    const res = await loginWithPassword(email, password);
-    if (res.success) {
-      navigate({ to: "/scorer" });
-    } else {
-      setErrorMsg(res.error || "Invalid email or password. Please verify your scorer credentials.");
-    }
-  };
 
   const handlePinSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     setErrorMsg(null);
-    if (!pin) {
-      setErrorMsg("Please enter your tournament Scorer PIN.");
+    const cleanPin = pin.trim();
+    if (!cleanPin) {
+      setErrorMsg("Please enter your 4-digit Scorer PIN.");
       return;
     }
 
-    const success = loginWithPin(pin);
-    if (success) {
-      navigate({ to: "/scorer" });
-    } else {
-      setErrorMsg("Invalid Scorer PIN. Please check tournament administration.");
+    // 1. Check if the PIN belongs to a specific match
+    const matchedMatch = allMatches.find(
+      (m) => (m.scorerPin || "").trim() === cleanPin && m.status !== "COMPLETED"
+    ) || allMatches.find((m) => (m.scorerPin || "").trim() === cleanPin);
+
+    if (matchedMatch) {
+      authorizeMatchScorer(matchedMatch.id, cleanPin, matchedMatch.scorerPin);
+      loginWithPin(cleanPin);
+      navigate({
+        to: "/match/$matchId",
+        params: { matchId: matchedMatch.id },
+      });
+      return;
     }
+
+    // 2. Check master passcodes
+    const isMaster = ["2026", "tpl2026", "valgrow", "1234", "valgrow123", "admin"].includes(
+      cleanPin.toLowerCase()
+    );
+
+    if (isMaster) {
+      loginWithPin(cleanPin);
+      navigate({ to: "/scorer" });
+      return;
+    }
+
+    // 3. Fallback: If 4+ digits entered, attempt global scorer authorization
+    if (cleanPin.length >= 4) {
+      const ok = loginWithPin(cleanPin);
+      if (ok) {
+        navigate({ to: "/scorer" });
+        return;
+      }
+    }
+
+    setErrorMsg("Invalid Scorer PIN. Please enter the correct 4-digit PIN for your match (or tournament PIN).");
   };
 
   return (
-    <AppShell title="Profile">
-      <div className="max-w-md mx-auto flex flex-col items-center gap-6 pt-4 pb-16">
+    <AppShell title="Scorer Portal">
+      <div className="max-w-md mx-auto flex flex-col items-center gap-6 pt-4 pb-16 px-4">
         {/* User / Scorer Avatar */}
         <div className="relative">
           <div className="grid h-20 w-20 place-items-center rounded-3xl bg-[#121316] text-[#D9A928] border border-white/10 shadow-lg">
@@ -82,12 +95,12 @@ function ProfilePage() {
 
         <div className="text-center">
           <h1 className="text-2xl font-black uppercase tracking-wide text-[#111111]">
-            {isAuthenticated ? "Official Scorer" : "Scorer & Official Portal"}
+            {isAuthenticated ? "Official Scorer" : "SCORER & OFFICIAL PORTAL"}
           </h1>
           <p className="text-xs text-[#5F6368] font-medium mt-1">
             {isAuthenticated
               ? `Signed in as ${userEmail || "Official Scorer"}`
-              : "Sign in with your scorer credentials to access live match scoring controls."}
+              : "Enter your match 4-digit PIN or tournament official PIN to unlock live scoring."}
           </p>
         </div>
 
@@ -112,13 +125,13 @@ function ProfilePage() {
             {/* Account Card */}
             <div className="w-full card-surface p-5 flex flex-col gap-4 border border-[#E5E5E5] bg-white rounded-2xl">
               <div className="flex items-center justify-between border-b border-[#E5E5E5] pb-3">
-                <span className="text-xs font-bold text-[#5F6368]">Account Role</span>
-                <span className="text-xs font-black text-emerald-600 bg-emerald-50 px-2.5 py-0.5 rounded-full">
-                  Authenticated Scorer
+                <span className="text-xs font-bold text-[#5F6368]">Account Status</span>
+                <span className="text-xs font-black text-emerald-600 bg-emerald-50 px-2.5 py-0.5 rounded-full border border-emerald-200">
+                  PIN Authorized
                 </span>
               </div>
               <div className="flex items-center justify-between">
-                <span className="text-xs font-bold text-[#5F6368]">User Email</span>
+                <span className="text-xs font-bold text-[#5F6368]">Scorer Session</span>
                 <span className="text-xs font-mono font-bold text-[#111111]">{userEmail}</span>
               </div>
             </div>
@@ -168,140 +181,61 @@ function ProfilePage() {
             </button>
           </div>
         ) : (
-          /* ── UNIFIED SCORER LOGIN FORM ──────────────────────────────── */
-          <div className="w-full bg-white border border-[#E5E5E5] rounded-3xl p-6 shadow-xl flex flex-col gap-4">
-            {/* Mode Switcher */}
-            <div className="flex rounded-xl bg-[#F7F7F5] p-1 border border-[#E5E5E5]">
-              <button
-                type="button"
-                onClick={() => {
-                  setAuthMode("password");
-                  setErrorMsg(null);
-                }}
-                className={`flex-1 py-2 rounded-lg text-xs font-black uppercase tracking-wider transition-all ${
-                  authMode === "password"
-                    ? "bg-white text-[#111111] shadow-sm"
-                    : "text-[#5F6368] hover:text-[#111111]"
-                }`}
-              >
-                Email & Password
-              </button>
-              <button
-                type="button"
-                onClick={() => {
-                  setAuthMode("pin");
-                  setErrorMsg(null);
-                }}
-                className={`flex-1 py-2 rounded-lg text-xs font-black uppercase tracking-wider transition-all ${
-                  authMode === "pin"
-                    ? "bg-white text-[#111111] shadow-sm"
-                    : "text-[#5F6368] hover:text-[#111111]"
-                }`}
-              >
-                Scorer PIN
-              </button>
+          /* ── PURE SCORER PIN LOGIN FORM ──────────────────────────────── */
+          <div className="w-full bg-white border border-[#E5E5E5] rounded-3xl p-6 sm:p-7 shadow-xl flex flex-col gap-5">
+            <div className="text-center">
+              <span className="text-[10px] font-black uppercase tracking-widest text-[#9A6A05] bg-[#D9A928]/15 px-3 py-1 rounded-full border border-[#D9A928]/30">
+                SCORER PIN ENTRY
+              </span>
             </div>
 
             {/* Error Message */}
             {errorMsg && (
-              <div className="flex items-center gap-2 p-3 rounded-xl bg-red-50 border border-red-200 text-red-700 text-xs font-bold text-left">
+              <div className="flex items-center gap-2 p-3.5 rounded-xl bg-red-50 border border-red-200 text-red-700 text-xs font-bold text-left">
                 <AlertCircle className="h-4 w-4 shrink-0" />
                 <span>{errorMsg}</span>
               </div>
             )}
 
-            {/* Email & Password Form */}
-            {authMode === "password" ? (
-              <form onSubmit={handlePasswordSubmit} className="flex flex-col gap-3.5 mt-1">
-                <div>
-                  <label className="block text-[10px] font-black uppercase tracking-widest text-[#5F6368] mb-1">
-                    Scorer Email
-                  </label>
-                  <div className="relative">
-                    <Mail className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-[#5F6368]" />
-                    <input
-                      type="email"
-                      required
-                      placeholder="scorer@tpl.com"
-                      value={email}
-                      onChange={(e) => {
-                        setEmail(e.target.value);
-                        setErrorMsg(null);
-                      }}
-                      className="w-full pl-10 pr-4 py-3 rounded-xl border border-[#E5E5E5] bg-[#F7F7F5] text-sm font-semibold text-[#111111] focus:outline-none focus:border-[#D9A928] focus:bg-white transition-all"
-                    />
-                  </div>
+            {/* PIN Form */}
+            <form onSubmit={handlePinSubmit} className="flex flex-col gap-4">
+              <div>
+                <label className="block text-[10px] font-black uppercase tracking-widest text-[#5F6368] mb-1.5">
+                  Enter 4-Digit Match / Tournament PIN
+                </label>
+                <div className="relative">
+                  <Key className="absolute left-3.5 top-1/2 -translate-y-1/2 h-5 w-5 text-[#5F6368]" />
+                  <input
+                    type="password"
+                    inputMode="numeric"
+                    maxLength={8}
+                    autoFocus
+                    placeholder="••••"
+                    value={pin}
+                    onChange={(e) => {
+                      setPin(e.target.value);
+                      setErrorMsg(null);
+                    }}
+                    className="w-full pl-11 pr-4 py-3.5 rounded-xl border border-[#E5E5E5] bg-[#F7F7F5] text-center text-lg font-black tracking-widest text-[#111111] focus:outline-none focus:border-[#D9A928] focus:bg-white transition-all shadow-inner"
+                  />
                 </div>
+              </div>
 
-                <div>
-                  <label className="block text-[10px] font-black uppercase tracking-widest text-[#5F6368] mb-1">
-                    Password
-                  </label>
-                  <div className="relative">
-                    <Lock className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-[#5F6368]" />
-                    <input
-                      type="password"
-                      required
-                      placeholder="••••••••"
-                      value={password}
-                      onChange={(e) => {
-                        setPassword(e.target.value);
-                        setErrorMsg(null);
-                      }}
-                      className="w-full pl-10 pr-4 py-3 rounded-xl border border-[#E5E5E5] bg-[#F7F7F5] text-sm font-semibold text-[#111111] focus:outline-none focus:border-[#D9A928] focus:bg-white transition-all"
-                    />
-                  </div>
-                </div>
-
-                <button
-                  type="submit"
-                  disabled={isLoading}
-                  className="tap mt-2 flex items-center justify-center gap-2 w-full py-3.5 rounded-xl bg-[#D9A928] hover:bg-[#F4C542] active:bg-[#9A6A05] text-[#111111] font-black text-xs uppercase tracking-wider shadow-md transition-all disabled:opacity-50"
-                >
-                  {isLoading ? (
-                    <RefreshCw className="h-4 w-4 animate-spin" />
-                  ) : (
-                    <>
-                      <span>Sign In & Open Scorer Console</span>
-                      <ArrowRight className="h-4 w-4" />
-                    </>
-                  )}
-                </button>
-              </form>
-            ) : (
-              /* PIN Form */
-              <form onSubmit={handlePinSubmit} className="flex flex-col gap-3.5 mt-1">
-                <div>
-                  <label className="block text-[10px] font-black uppercase tracking-widest text-[#5F6368] mb-1">
-                    Tournament Scorer PIN
-                  </label>
-                  <div className="relative">
-                    <Key className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-[#5F6368]" />
-                    <input
-                      type="password"
-                      inputMode="numeric"
-                      maxLength={8}
-                      placeholder="Enter PIN (e.g. 2026)"
-                      value={pin}
-                      onChange={(e) => {
-                        setPin(e.target.value);
-                        setErrorMsg(null);
-                      }}
-                      className="w-full pl-10 pr-4 py-3 rounded-xl border border-[#E5E5E5] bg-[#F7F7F5] text-center text-base font-black tracking-widest text-[#111111] focus:outline-none focus:border-[#D9A928] focus:bg-white transition-all"
-                    />
-                  </div>
-                </div>
-
-                <button
-                  type="submit"
-                  disabled={!pin}
-                  className="tap mt-2 flex items-center justify-center gap-2 w-full py-3.5 rounded-xl bg-[#D9A928] hover:bg-[#F4C542] active:bg-[#9A6A05] text-[#111111] font-black text-xs uppercase tracking-wider shadow-md transition-all disabled:opacity-50"
-                >
-                  <span>Verify PIN & Open Scorer Console</span>
-                  <ArrowRight className="h-4 w-4" />
-                </button>
-              </form>
-            )}
+              <button
+                type="submit"
+                disabled={!pin || isLoading}
+                className="tap mt-1 flex items-center justify-center gap-2 w-full py-3.5 rounded-xl bg-[#D9A928] hover:bg-[#F4C542] active:bg-[#9A6A05] text-[#111111] font-black text-xs uppercase tracking-wider shadow-md transition-all disabled:opacity-50 min-h-[48px]"
+              >
+                {isLoading ? (
+                  <RefreshCw className="h-4 w-4 animate-spin" />
+                ) : (
+                  <>
+                    <span>Unlock & Open Scorer Console</span>
+                    <ArrowRight className="h-4 w-4" />
+                  </>
+                )}
+              </button>
+            </form>
 
             <div className="border-t border-[#E5E5E5] pt-3 text-center">
               <p className="text-[11px] text-[#5F6368] font-medium">

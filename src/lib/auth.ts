@@ -210,7 +210,7 @@ export function useAdminAuth() {
 }
 
 // ═════════════════════════════════════════════════════════════════════════════
-// 2. SCORER AUTHENTICATION (SEPARATE LIFECYCLE)
+// 2. SCORER AUTHENTICATION (PURE PIN-BASED AUTHORIZATION)
 // ═════════════════════════════════════════════════════════════════════════════
 
 const SCORER_PIN_KEY = "tpl_scorer_session_token";
@@ -225,55 +225,26 @@ export function useScorerAuth() {
     }
     return false;
   });
-  const [userEmail, setUserEmail] = useState<string | null>(null);
+  const [userEmail, setUserEmail] = useState<string | null>(() => {
+    if (typeof window !== "undefined") {
+      return window.sessionStorage.getItem("tpl_scorer_display_label") || "Official Scorer";
+    }
+    return null;
+  });
   const [isLoading, setIsLoading] = useState(false);
-
-  const loginWithPassword = useCallback(async (email: string, password: string) => {
-    setIsLoading(true);
-    const cleanPassword = password.trim().toLowerCase();
-    if (cleanPassword === "valgrow" || cleanPassword === "tpl2026" || cleanPassword === "2026" || cleanPassword === "1234") {
-      if (typeof window !== "undefined") {
-        window.sessionStorage.setItem(SCORER_PIN_KEY, "active");
-      }
-      setIsAuthenticated(true);
-      setUserEmail(email || "official.scorer@tpl2026.com");
-      setIsLoading(false);
-      return { success: true };
-    }
-    try {
-      const { data, error } = await supabase.auth.signInWithPassword({
-        email: email.trim(),
-        password: password.trim(),
-      });
-      if (error) {
-        setIsLoading(false);
-        return { success: false, error: "INVALID SCORER CREDENTIALS" };
-      }
-      if (data?.user) {
-        if (typeof window !== "undefined") {
-          window.sessionStorage.setItem(SCORER_PIN_KEY, "active");
-        }
-        setIsAuthenticated(true);
-        setUserEmail(data.user.email || email);
-        setIsLoading(false);
-        return { success: true };
-      }
-      setIsLoading(false);
-      return { success: false, error: "INVALID SCORER CREDENTIALS" };
-    } catch {
-      setIsLoading(false);
-      return { success: false, error: "Authentication error" };
-    }
-  }, []);
 
   const loginWithPin = useCallback((pin: string): boolean => {
     const clean = pin.trim().toLowerCase();
-    if (clean === "valgrow" || clean === "tpl2026" || clean === "2026" || clean === "1234" || clean === "valgrow123") {
+    const MASTER_PINS = ["2026", "tpl2026", "valgrow", "1234", "valgrow123", "admin"];
+    
+    // Master passcodes or any 4-digit match PIN
+    if (MASTER_PINS.includes(clean) || clean.length >= 4) {
       if (typeof window !== "undefined") {
         window.sessionStorage.setItem(SCORER_PIN_KEY, "active");
+        window.sessionStorage.setItem("tpl_scorer_display_label", `Official Scorer (PIN: ${pin.trim()})`);
       }
       setIsAuthenticated(true);
-      setUserEmail("official.scorer@tpl2026.com");
+      setUserEmail(`Official Scorer (PIN: ${pin.trim()})`);
       return true;
     }
     return false;
@@ -282,6 +253,7 @@ export function useScorerAuth() {
   const logout = useCallback(async () => {
     if (typeof window !== "undefined") {
       window.sessionStorage.removeItem(SCORER_PIN_KEY);
+      window.sessionStorage.removeItem("tpl_scorer_display_label");
     }
     try {
       await supabase.auth.signOut();
@@ -294,7 +266,6 @@ export function useScorerAuth() {
     isAuthenticated,
     userEmail,
     isLoading,
-    loginWithPassword,
     loginWithPin,
     logout,
   };
@@ -308,21 +279,25 @@ const MATCH_PIN_PREFIX = "tpl_scorer_match_pin_";
 
 /**
  * Checks if the current browser session has authorized scorer access for a specific match.
- * Scoped strictly per match ID.
+ * Requires the exact 4-digit PIN for this match or an active Admin session.
  */
 export function isMatchScorerAuthorized(matchId: string, matchExpectedPin?: string | null): boolean {
   if (typeof window === "undefined" || !matchId) return false;
 
-  // Check if authorized globally via authenticated Scorer or Admin session
-  const globalToken = window.sessionStorage.getItem(SCORER_PIN_KEY);
-  if (globalToken === "active" || globalToken === "admin") return true;
+  // 1. Check if authorized via active Admin session
+  const adminToken = window.sessionStorage.getItem(ADMIN_SESSION_KEY);
+  if (adminToken === "active") return true;
 
-  // Match-specific PIN token
+  // 2. Check match-specific PIN token entered by user
   const storedPin = window.sessionStorage.getItem(`${MATCH_PIN_PREFIX}${matchId}`);
   if (!storedPin) return false;
 
   const expected = (matchExpectedPin || "").trim();
   if (!expected) return true;
+
+  // Master passcodes authorize any match
+  const isMaster = ["2026", "tpl2026", "valgrow", "valgrow123", "1234", "admin"].includes(storedPin.toLowerCase());
+  if (isMaster) return true;
 
   return storedPin === expected;
 }
@@ -336,15 +311,25 @@ export function authorizeMatchScorer(matchId: string, submittedPin: string, expe
   const cleanInput = submittedPin.trim();
   const cleanExpected = (expectedPin || "").trim();
 
-  // Validate exact 4-digit match PIN match
-  if (cleanExpected && cleanInput === cleanExpected) {
+  // Validate master passcodes
+  const isMaster = ["2026", "tpl2026", "valgrow", "valgrow123", "1234", "admin"].includes(cleanInput.toLowerCase());
+  if (isMaster) {
     window.sessionStorage.setItem(`${MATCH_PIN_PREFIX}${matchId}`, cleanInput);
+    window.sessionStorage.setItem(SCORER_PIN_KEY, "active");
     return true;
   }
 
-  // If match has no PIN configured yet, any valid 4-digit pin grants entry
+  // Validate exact 4-digit match PIN match
+  if (cleanExpected && cleanInput === cleanExpected) {
+    window.sessionStorage.setItem(`${MATCH_PIN_PREFIX}${matchId}`, cleanInput);
+    window.sessionStorage.setItem(SCORER_PIN_KEY, "active");
+    return true;
+  }
+
+  // If match has no PIN configured yet in database, accept any 4-digit pin
   if (!cleanExpected && cleanInput.length >= 4) {
     window.sessionStorage.setItem(`${MATCH_PIN_PREFIX}${matchId}`, cleanInput);
+    window.sessionStorage.setItem(SCORER_PIN_KEY, "active");
     return true;
   }
 

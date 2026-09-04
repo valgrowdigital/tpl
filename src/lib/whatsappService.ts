@@ -51,50 +51,66 @@ export const whatsappCacheRepository = {
 };
 
 /**
- * Sends a WhatsApp notification using the configured OpenWA server.
- * Returns true if sent successfully, throws an error if failed.
+ * Opens WhatsApp Web/App with pre-filled message text.
  */
-export async function sendWhatsAppNotification(eventId: string, message: string): Promise<boolean> {
+export function openWhatsAppShare(message: string, phone?: string): void {
+  if (typeof window === "undefined") return;
+  const encoded = encodeURIComponent(message);
+  const targetUrl = phone
+    ? `https://api.whatsapp.com/send?phone=${encodeURIComponent(phone)}&text=${encoded}`
+    : `https://api.whatsapp.com/send?text=${encoded}`;
+  window.open(targetUrl, "_blank", "noopener,noreferrer");
+}
+
+/**
+ * Sends a WhatsApp notification using the configured OpenWA server if active,
+ * or opens WhatsApp Web/App directly with the pre-filled message so it never fails.
+ */
+export async function sendWhatsAppNotification(
+  eventId: string,
+  message: string
+): Promise<{ success: boolean; method: "api" | "direct" }> {
   const settings = whatsappSettingsRepository.getSettings();
-  if (!settings || !settings.serverUrl || !settings.apiKey || !settings.sessionId || !settings.targetChatId) {
-    throw new Error("WhatsApp settings are incomplete or not configured.");
-  }
 
-  if (whatsappCacheRepository.hasSent(eventId)) {
-    // Already sent this specific notification
-    return true; 
-  }
-
-  // Sanitize server URL
-  const serverUrl = settings.serverUrl.replace(/\/$/, "");
-
-  try {
-    const response = await fetch(`${serverUrl}/api/sendText`, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        "X-Api-Key": settings.apiKey,
-        "Accept": "application/json"
-      },
-      body: JSON.stringify({
-        chatId: settings.targetChatId,
-        text: message,
-        session: settings.sessionId
-      })
-    });
-
-    if (!response.ok) {
-      throw new Error(`WhatsApp server responded with status: ${response.status}`);
+  // Try OpenWA API delivery if configured
+  if (
+    settings &&
+    settings.serverUrl &&
+    settings.apiKey &&
+    settings.sessionId &&
+    settings.targetChatId
+  ) {
+    if (whatsappCacheRepository.hasSent(eventId)) {
+      return { success: true, method: "api" };
     }
 
-    // Mark as sent in the idempotency cache
-    whatsappCacheRepository.markSent(eventId);
-    return true;
-  } catch (error: any) {
-    console.error("Failed to send WhatsApp notification:", error);
-    if (error.message && error.message.includes("fetch")) {
-      throw new Error("WhatsApp server unavailable");
+    try {
+      const serverUrl = settings.serverUrl.replace(/\/$/, "");
+      const response = await fetch(`${serverUrl}/api/sendText`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "X-Api-Key": settings.apiKey,
+          Accept: "application/json",
+        },
+        body: JSON.stringify({
+          chatId: settings.targetChatId,
+          text: message,
+          session: settings.sessionId,
+        }),
+      });
+
+      if (response.ok) {
+        whatsappCacheRepository.markSent(eventId);
+        return { success: true, method: "api" };
+      }
+    } catch (error: any) {
+      console.warn("[WhatsApp Service] API delivery failed, falling back to direct share:", error);
     }
-    throw new Error(error.message || "Failed to send notification");
   }
+
+  // Fallback: Directly open WhatsApp Web / App with the pre-formatted match fixture/result
+  openWhatsAppShare(message);
+  whatsappCacheRepository.markSent(eventId);
+  return { success: true, method: "direct" };
 }

@@ -1,7 +1,8 @@
+import { useState } from "react";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useMatchStore } from "@/lib/scoring/store";
 import { lookup } from "@/lib/repositories";
-import { useScorerAuth, isMatchScorerAuthorized } from "@/lib/auth";
+import { useAdminAuth, isMatchScorerAuthorized } from "@/lib/auth";
 import { ScorerPinGate } from "@/components/auth/ScorerPinGate";
 import { Logo } from "@/components/brand/Logo";
 import { PreMatchScreen } from "@/components/match/PreMatchScreen";
@@ -19,9 +20,10 @@ export const Route = createFileRoute("/match/$matchId")({
 
 function MatchPage() {
   const { matchId } = Route.useParams();
-  const { isAuthenticated } = useScorerAuth();
+  const { isAdminAuthenticated } = useAdminAuth();
   const store = useMatchStore(matchId);
   const { match, state, doc, hydrated } = store;
+  const [authKey, setAuthKey] = useState(0);
 
   if (!hydrated) {
     return (
@@ -47,15 +49,17 @@ function MatchPage() {
 
   const teamA = lookup.team(match.teamAId);
   const teamB = lookup.team(match.teamBId);
-  const isAuthorized = isAuthenticated || isMatchScorerAuthorized(match.id, match.scorerPin);
+  const isAuthorized = isAdminAuthenticated || isMatchScorerAuthorized(match.id, match.scorerPin);
 
   // ── Scorer Protection Gate ───────────────────────────────────────────────
   if (!isAuthorized) {
     return (
       <ScorerPinGate
+        key={authKey}
         matchId={match.id}
         expectedPin={match.scorerPin}
         matchTitle={`Match #${match.matchNumber} (${teamA?.shortName ?? "Team A"} vs ${teamB?.shortName ?? "Team B"})`}
+        onSuccess={() => setAuthKey((prev) => prev + 1)}
       />
     );
   }
