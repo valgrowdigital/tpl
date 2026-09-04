@@ -10,6 +10,7 @@ import { PartnershipGraphic } from "@/components/obs/graphics/PartnershipGraphic
 import { UpcomingMatchesGraphic } from "@/components/obs/graphics/UpcomingMatchesGraphic";
 import { PlayerAwardsGraphic } from "@/components/obs/graphics/PlayerAwardsGraphic";
 import { AdvertisementBreakGraphic } from "@/components/obs/graphics/AdvertisementBreakGraphic";
+import { InningsBreakScorecardGraphic } from "@/components/obs/graphics/InningsBreakScorecardGraphic";
 
 interface GraphicRendererProps {
   matchId: string;
@@ -25,6 +26,13 @@ export function GraphicRenderer({ matchId, backgroundStreamUrl, isPreview = fals
   // 1. Check Handler Overrides (Between Matches graphics have highest priority)
   if (activeGraphic) {
     switch (activeGraphic.type) {
+      case "INNINGS_BREAK":
+      case "SCORECARD":
+        return (
+          <ObsLayout backgroundStreamUrl={backgroundStreamUrl} isPreview={isPreview}>
+            <InningsBreakScorecardGraphic stream={stream} transitionType={activeGraphic.payload?.transition} />
+          </ObsLayout>
+        );
       case "ADVERTISEMENT":
         return (
           <ObsLayout backgroundStreamUrl={backgroundStreamUrl} isPreview={isPreview}>
@@ -176,7 +184,16 @@ export function GraphicRenderer({ matchId, backgroundStreamUrl, isPreview = fals
     );
   }
 
-  // 3. Check Auto Match Result
+  // 3. Check Innings Break (1st Innings Completed Showcase)
+  if (stream.matchState?.phase === "break") {
+    return (
+      <ObsLayout backgroundStreamUrl={backgroundStreamUrl} isPreview={isPreview}>
+        <InningsBreakScorecardGraphic stream={stream} />
+      </ObsLayout>
+    );
+  }
+
+  // 4. Check Auto Match Result
   if (stream.isCompleted) {
     return (
       <ObsLayout backgroundStreamUrl={backgroundStreamUrl} isPreview={isPreview}>

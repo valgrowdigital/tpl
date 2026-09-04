@@ -1,7 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useState } from "react";
 import { useObsHandlerMaster } from "@/hooks/useObsHandlerMaster";
-import { Users, Calendar, Trophy, Image as ImageIcon, Folder, Play, Square, Radio, RefreshCw, Maximize2 } from "lucide-react";
+import { Users, Calendar, Trophy, Image as ImageIcon, Folder, Play, Square, Radio, RefreshCw, Maximize2, Target, Handshake } from "lucide-react";
 import { GraphicType, obsHandlerService } from "@/lib/obsHandlerService";
 import { useMatches } from "@/hooks/useCricketData";
 import { calculateTournamentStats } from "@/lib/scoring/statistics";
@@ -23,11 +23,12 @@ function ObsBetweenMatches() {
   const backgroundStreamUrl = obsStreamRepository.getStreamUrl(liveMatch?.id) || undefined;
 
   const graphics = [
+    { id: "INNINGS_BREAK", label: "1ST INN SCORECARD", icon: Target, desc: "Show 1st innings stats & target" },
+    { id: "PARTNERSHIP", label: "PARTNERSHIP", icon: Handshake, desc: "Current batting partnership" },
     { id: "SQUADS", label: "TEAM SQUADS", icon: Users, desc: "Playing XI & substitutes" },
     { id: "UPCOMING", label: "UPCOMING MATCHES", icon: Calendar, desc: "Show next fixtures" },
     { id: "PLAYER_AWARDS", label: "PLAYER AWARDS", icon: Trophy, desc: "Awards & leaderboards" },
     { id: "CUSTOM", label: "CUSTOM GRAPHIC", icon: ImageIcon, desc: "Upload custom overlay" },
-    { id: "MEDIA", label: "MEDIA LIBRARY", icon: Folder, desc: "Images, videos, assets" },
   ];
 
   const handleShow = (type: GraphicType) => {

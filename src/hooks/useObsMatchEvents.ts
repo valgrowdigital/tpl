@@ -68,6 +68,17 @@ export type ObsBroadcastEvent =
     }
   | {
       id: string;
+      type: "TEAM_MILESTONE";
+      priority: number;
+      durationMs: number;
+      teamName: string;
+      milestoneRuns: number;
+      oversText: string;
+      scoreText: string;
+      crr: number;
+    }
+  | {
+      id: string;
       type: "NEW_BATTER";
       priority: number;
       durationMs: number;
@@ -109,12 +120,21 @@ export type ObsBroadcastEvent =
       type: "PARTNERSHIP";
       priority: number;
       durationMs: number;
+      milestoneRuns: number;
+      batterAId: string;
       batterAName: string;
       batterARuns: number;
       batterABalls: number;
+      batterAFours: number;
+      batterASixes: number;
+      batterAAvatar?: string;
+      batterBId: string;
       batterBName: string;
       batterBRuns: number;
       batterBBalls: number;
+      batterBFours: number;
+      batterBSixes: number;
+      batterBAvatar?: string;
       totalRuns: number;
       totalBalls: number;
     }
@@ -146,6 +166,7 @@ const EVENT_PRIORITIES = {
   CENTURY: 70,
   NO_BALL: 65,
   FIFTY: 60,
+  TEAM_MILESTONE: 58,
   PARTNERSHIP: 55,
   SIX: 50,
   FOUR: 45,
@@ -207,6 +228,14 @@ export function useObsMatchEvents(stream: ObsMatchStreamResult) {
     [players]
   );
 
+  const getPlayerAvatar = useCallback(
+    (id?: string) => {
+      if (!id) return undefined;
+      return lookup.player(id)?.avatarUrl || players.find((p) => p.id === id)?.avatarUrl;
+    },
+    [players]
+  );
+
   // Queue runner
   const processNextEvent = useCallback(() => {
     if (queueRef.current.length === 0) {
@@ -226,7 +255,6 @@ export function useObsMatchEvents(stream: ObsMatchStreamResult) {
 
   const enqueueEvent = useCallback(
     (event: ObsBroadcastEvent) => {
-      // Avoid duplicate event in queue
       if (queueRef.current.some((e) => e.id === event.id) || currentEvent?.id === event.id) {
         return;
       }
@@ -281,6 +309,9 @@ export function useObsMatchEvents(stream: ObsMatchStreamResult) {
           if (b.runs >= 50) milestonesReachedRef.current.add(`${innIdx}-${b.playerId}-50`);
           if (b.runs >= 100) milestonesReachedRef.current.add(`${innIdx}-${b.playerId}-100`);
         });
+        [50, 100, 150, 200].forEach((m) => {
+          if (inn.runs >= m) milestonesReachedRef.current.add(`team-milestone-${innIdx}-${m}`);
+        });
       });
 
       if (currentInnings?.currentBowlerId) {
@@ -306,7 +337,7 @@ export function useObsMatchEvents(stream: ObsMatchStreamResult) {
         id: `match-result-${stream.match?.id}`,
         type: "MATCH_RESULT",
         priority: EVENT_PRIORITIES.MATCH_RESULT,
-        durationMs: 4000,
+        durationMs: getCustomEventDuration(5000),
         resultText: matchState.resultText,
         winnerName: stream.match?.winnerId ? lookup.team(stream.match.winnerId)?.name : undefined,
       });
@@ -321,7 +352,7 @@ export function useObsMatchEvents(stream: ObsMatchStreamResult) {
         id: `innings-break-${stream.match?.id}`,
         type: "INNINGS_BREAK",
         priority: EVENT_PRIORITIES.INNINGS_BREAK,
-        durationMs: 3800,
+        durationMs: getCustomEventDuration(6000),
         battingTeamName: team1?.name || "1st Innings",
         runs: inn1?.runs ?? 0,
         wickets: inn1?.wickets ?? 0,
@@ -421,7 +452,7 @@ export function useObsMatchEvents(stream: ObsMatchStreamResult) {
             id: `century-${innIdx}-${deliv.strikerId}`,
             type: "CENTURY",
             priority: EVENT_PRIORITIES.CENTURY,
-            durationMs: 3000,
+            durationMs: getCustomEventDuration(3200),
             batterName: batter,
             runs,
             balls,
@@ -432,7 +463,7 @@ export function useObsMatchEvents(stream: ObsMatchStreamResult) {
             id: `fifty-${innIdx}-${deliv.strikerId}`,
             type: "FIFTY",
             priority: EVENT_PRIORITIES.FIFTY,
-            durationMs: 2800,
+            durationMs: getCustomEventDuration(3000),
             batterName: batter,
             runs,
             balls,
@@ -441,7 +472,32 @@ export function useObsMatchEvents(stream: ObsMatchStreamResult) {
       }
     });
 
-    // ── 4. OVER COMPLETE DETECTION ──────────────────────────────────────────
+    // ── 4. TEAM SCORE MILESTONES (50, 100, 150, 200 Runs) ───────────────────
+    if (currentInnings) {
+      const innIdx = currentInnings.index;
+      const battingTeam = lookup.team(currentInnings.battingTeamId) || teams.find((t) => t.id === currentInnings.battingTeamId);
+      const teamMilestones = [50, 100, 150, 200];
+
+      teamMilestones.forEach((m) => {
+        const key = `team-milestone-${innIdx}-${m}`;
+        if (currentInnings.runs >= m && !milestonesReachedRef.current.has(key)) {
+          milestonesReachedRef.current.add(key);
+          enqueueEvent({
+            id: key,
+            type: "TEAM_MILESTONE",
+            priority: EVENT_PRIORITIES.TEAM_MILESTONE,
+            durationMs: getCustomEventDuration(3800),
+            teamName: battingTeam?.name || "Batting Team",
+            milestoneRuns: m,
+            oversText: `${currentInnings.oversText} Overs`,
+            scoreText: `${currentInnings.runs}/${currentInnings.wickets}`,
+            crr: currentInnings.crr,
+          });
+        }
+      });
+    }
+
+    // ── 5. OVER COMPLETE DETECTION ──────────────────────────────────────────
     if (currentInnings && currentInnings.legalBalls > 0 && currentInnings.legalBalls % BALLS_PER_OVER === 0) {
       const completedOver = currentInnings.legalBalls / BALLS_PER_OVER;
       if (completedOver > lastCompletedOverRef.current) {
@@ -450,7 +506,7 @@ export function useObsMatchEvents(stream: ObsMatchStreamResult) {
           id: `over-complete-${currentInnings.index}-${completedOver}`,
           type: "OVER_COMPLETE",
           priority: EVENT_PRIORITIES.OVER_COMPLETE,
-          durationMs: 2200,
+          durationMs: getCustomEventDuration(2200),
           overNumber: completedOver,
           runs: currentInnings.runs,
           wickets: currentInnings.wickets,
@@ -459,7 +515,7 @@ export function useObsMatchEvents(stream: ObsMatchStreamResult) {
       }
     }
 
-    // ── 5. NEW BATTER AT THE CREASE DETECTION ───────────────────────────────
+    // ── 6. NEW BATTER AT THE CREASE DETECTION ───────────────────────────────
     if (currentInnings) {
       const battingTeam = lookup.team(currentInnings.battingTeamId) || teams.find((t) => t.id === currentInnings.battingTeamId);
       
@@ -473,7 +529,7 @@ export function useObsMatchEvents(stream: ObsMatchStreamResult) {
               id: `new-batter-${batterId}-${Date.now()}`,
               type: "NEW_BATTER",
               priority: EVENT_PRIORITIES.NEW_BATTER,
-              durationMs: 3800,
+              durationMs: getCustomEventDuration(3800),
               batterName: getPlayerName(batterId),
               teamName: battingTeam?.name,
               role: getPlayerRole(batterId),
@@ -486,13 +542,13 @@ export function useObsMatchEvents(stream: ObsMatchStreamResult) {
       checkBatterEntry(currentInnings.nonStrikerId);
     }
 
-    // ── 6. PARTNERSHIP MILESTONE DETECTION (25, 50, 75, 100 runs) ──────────
-    if (currentInnings?.partnership && currentInnings.partnership.runs >= 25) {
+    // ── 7. PARTNERSHIP MILESTONE DETECTION (30, 50, 75, 100, 150 runs) ──────
+    if (currentInnings?.partnership && currentInnings.partnership.runs >= 30) {
       const p = currentInnings.partnership;
       const bA = p.batterAId;
       const bB = p.batterBId;
       const innIdx = currentInnings.index;
-      const milestones = [25, 50, 75, 100];
+      const milestones = [30, 50, 75, 100, 150];
 
       milestones.forEach((m) => {
         const mKey = `partnership-${innIdx}-${bA}-${bB}-${m}`;
@@ -504,13 +560,22 @@ export function useObsMatchEvents(stream: ObsMatchStreamResult) {
             id: mKey,
             type: "PARTNERSHIP",
             priority: EVENT_PRIORITIES.PARTNERSHIP,
-            durationMs: 3000,
+            durationMs: getCustomEventDuration(4200),
+            milestoneRuns: m,
+            batterAId: bA,
             batterAName: getPlayerName(bA),
             batterARuns: statA?.runs ?? 0,
             batterABalls: statA?.balls ?? 0,
+            batterAFours: statA?.fours ?? 0,
+            batterASixes: statA?.sixes ?? 0,
+            batterAAvatar: getPlayerAvatar(bA),
+            batterBId: bB,
             batterBName: getPlayerName(bB),
             batterBRuns: statB?.runs ?? 0,
             batterBBalls: statB?.balls ?? 0,
+            batterBFours: statB?.fours ?? 0,
+            batterBSixes: statB?.sixes ?? 0,
+            batterBAvatar: getPlayerAvatar(bB),
             totalRuns: p.runs,
             totalBalls: p.balls,
           });
@@ -526,6 +591,7 @@ export function useObsMatchEvents(stream: ObsMatchStreamResult) {
     tournamentStats,
     getPlayerName,
     getPlayerRole,
+    getPlayerAvatar,
     enqueueEvent,
   ]);
 
