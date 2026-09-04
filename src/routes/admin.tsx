@@ -29,6 +29,7 @@ import {
   Plus,
   RefreshCw,
   AlertCircle,
+  AlertTriangle,
   CheckCircle2,
   Lock,
   ArrowRight,
@@ -512,6 +513,63 @@ function AdminPortalPage() {
       return t.id === currentVal || !selectedTeamIds.includes(t.id);
     });
   };
+
+  // Most recent scheduled / played match to detect back-to-back fatigue
+  const lastScheduledMatch = useMemo(() => {
+    if (matches.length === 0) return null;
+    const sorted = [...matches].sort((a, b) => {
+      if (a.matchNumber && b.matchNumber) return a.matchNumber - b.matchNumber;
+      return new Date(a.scheduledAt).getTime() - new Date(b.scheduledAt).getTime();
+    });
+    return sorted[sorted.length - 1] || null;
+  }, [matches]);
+
+  const lastMatchTeamIds = useMemo(() => {
+    if (!lastScheduledMatch) return new Set<string>();
+    return new Set([lastScheduledMatch.teamAId, lastScheduledMatch.teamBId]);
+  }, [lastScheduledMatch]);
+
+  const FIXTURE_INDEX_PAIRS: [number, number][] = [
+    [0, 0], // M1: G1[0] vs G2[0]
+    [1, 1], // M2: G1[1] vs G2[1]
+    [2, 2], // M3: G1[2] vs G2[2]
+    [0, 1], // M4: G1[0] vs G2[1]
+    [1, 2], // M5: G1[1] vs G2[2]
+    [2, 0], // M6: G1[2] vs G2[0]
+    [0, 2], // M7: G1[0] vs G2[2]
+    [1, 0], // M8: G1[1] vs G2[0]
+    [2, 1], // M9: G1[2] vs G2[1]
+  ];
+
+  const generatedPreviewFixtures = useMemo(() => {
+    if (genGroup1Teams.some((t) => !t) || genGroup2Teams.some((t) => !t)) return [];
+    const g1 = genGroup1Teams.map((id) => teams.find((t) => t.id === id));
+    const g2 = genGroup2Teams.map((id) => teams.find((t) => t.id === id));
+    if (g1.some((t) => !t) || g2.some((t) => !t)) return [];
+
+    const startTime24 = parseTime12To24(genStartHour, genStartMinute, genStartAmPm) || "09:00";
+    const [hStr, mStr] = startTime24.split(":");
+    const hours = parseInt(hStr, 10) || 9;
+    const minutes = parseInt(mStr, 10) || 0;
+    const [y, m, d] = (genStartDate || "2026-08-30").split("-").map(Number);
+    const baseDate = new Date(y, (m || 1) - 1, d || 1, hours, minutes, 0, 0);
+
+    return FIXTURE_INDEX_PAIRS.map(([i1, i2], idx) => {
+      const tA = g1[i1]!;
+      const tB = g2[i2]!;
+      const matchTime = new Date(baseDate.getTime() + idx * (Number(genIntervalMinutes) || 45) * 60 * 1000);
+      const timeStr = matchTime.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
+      const resting = [...g1, ...g2].filter((t) => t && t.id !== tA.id && t.id !== tB.id) as Team[];
+
+      return {
+        matchNum: idx + 1,
+        teamA: tA,
+        teamB: tB,
+        timeStr,
+        resting,
+      };
+    });
+  }, [genGroup1Teams, genGroup2Teams, genStartDate, genStartHour, genStartMinute, genStartAmPm, genIntervalMinutes, teams]);
 
   // ── CREATE SINGLE MATCH HANDLER ──────────────────────────────────────────
   const handleCreateSingleMatchSubmit = async () => {
@@ -2376,6 +2434,26 @@ function AdminPortalPage() {
                 </div>
               </div>
 
+              {/* Back-to-Back Rest Advisory for Single Match */}
+              {lastScheduledMatch && (lastMatchTeamIds.has(singleMatchTeam1) || lastMatchTeamIds.has(singleMatchTeam2)) && (
+                <div className="p-3.5 rounded-2xl bg-amber-50 border border-amber-300 text-amber-900 text-xs font-medium flex items-start gap-2.5">
+                  <AlertTriangle className="h-4 w-4 text-amber-600 shrink-0 mt-0.5" />
+                  <div className="flex flex-col gap-0.5">
+                    <span className="font-black text-amber-950 uppercase text-[10px] tracking-wider">
+                      Consecutive Match Rest Advisory
+                    </span>
+                    <span className="text-[11px] leading-relaxed">
+                      {lastMatchTeamIds.has(singleMatchTeam1) && lastMatchTeamIds.has(singleMatchTeam2)
+                        ? `Both selected teams played in previous Match #${lastScheduledMatch.matchNumber}.`
+                        : lastMatchTeamIds.has(singleMatchTeam1)
+                        ? `Team "${teams.find((t) => t.id === singleMatchTeam1)?.name}" played in previous Match #${lastScheduledMatch.matchNumber}.`
+                        : `Team "${teams.find((t) => t.id === singleMatchTeam2)?.name}" played in previous Match #${lastScheduledMatch.matchNumber}.`}
+                      {" "}Tournament scheduling rules recommend giving teams at least 1 match rest to avoid back-to-back fatigue.
+                    </span>
+                  </div>
+                </div>
+              )}
+
               {/* Date & 12-Hour AM/PM Time Selector */}
               <div className="p-4 rounded-2xl bg-[#F9FAFB] border border-[#E5E7EB] flex flex-col gap-3">
                 <span className="text-[10px] font-black uppercase text-[#6B7280] tracking-wider">
@@ -2564,12 +2642,15 @@ function AdminPortalPage() {
 
             {/* Modal Scrollable Body */}
             <div className="flex-1 overflow-y-auto px-5 sm:px-6 py-4 sm:py-5 flex flex-col gap-4 overscroll-contain">
-              {/* Group Exclusion Notice Banner */}
-              <div className="p-3 rounded-xl bg-[#FFFBEB] border border-[#FDE68A] text-[#92400E] text-xs font-medium flex items-center gap-2">
-                <span className="h-2 w-2 rounded-full bg-[#D9A928] shrink-0" />
-                <span>
-                  Select 6 different teams. Teams selected in one group are unavailable in the other group.
-                </span>
+              {/* Group Exclusion & Zero Back-to-Back Notice Banner */}
+              <div className="p-3.5 rounded-2xl bg-[#FFFBEB] border border-[#FDE68A] text-[#92400E] text-xs font-medium flex flex-col gap-1">
+                <div className="flex items-center gap-2 font-black text-[#78350F]">
+                  <span className="h-2 w-2 rounded-full bg-[#D9A928] shrink-0" />
+                  <span>Zero Back-to-Back Match Policy Enforced</span>
+                </div>
+                <p className="text-[11px] leading-relaxed text-[#92400E] pl-4">
+                  Select 6 distinct teams. All 9 fixtures are automatically sequenced such that <strong>no team ever plays back-to-back</strong>, guaranteeing each team at least 1 match rest before playing again.
+                </p>
               </div>
 
               {/* Team Selection Groups (2-col Desktop, 1-col Mobile) */}
@@ -2736,6 +2817,46 @@ function AdminPortalPage() {
                 </span>
               </div>
 
+              {/* Live Fixture Sequence Preview with Zero Back-to-Back Guarantee */}
+              {generatedPreviewFixtures.length === 9 && (
+                <div className="flex flex-col gap-2.5 p-4 rounded-2xl bg-[#F9FAFB] border border-[#E5E7EB]">
+                  <div className="flex items-center justify-between">
+                    <span className="text-[11px] font-black uppercase text-[#111827] tracking-wider flex items-center gap-1.5">
+                      <CheckCircle2 className="h-4 w-4 text-emerald-600" />
+                      Sequence Preview (No Back-to-Back Matches)
+                    </span>
+                    <span className="text-[10px] font-bold text-emerald-700 bg-emerald-50 px-2.5 py-0.5 rounded-full border border-emerald-300">
+                      Rest Protected ✓
+                    </span>
+                  </div>
+
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2 max-h-56 overflow-y-auto pr-1">
+                    {generatedPreviewFixtures.map((f) => (
+                      <div
+                        key={f.matchNum}
+                        className="p-2.5 rounded-xl bg-white border border-[#E5E7EB] shadow-2xs flex flex-col gap-1.5 text-xs"
+                      >
+                        <div className="flex items-center justify-between text-[10px]">
+                          <span className="font-black px-1.5 py-0.5 rounded bg-[#D9A928]/20 text-[#9A6A05]">
+                            Match #{String(f.matchNum).padStart(2, "0")}
+                          </span>
+                          <span className="font-mono font-bold text-[#6B7280]">
+                            {f.timeStr}
+                          </span>
+                        </div>
+                        <div className="font-black text-[#111827] text-xs truncate">
+                          {f.teamA.shortName} <span className="text-[#9CA3AF] font-normal">vs</span> {f.teamB.shortName}
+                        </div>
+                        <div className="text-[9px] text-[#6B7280] truncate">
+                          <span className="font-bold text-[#4B5563]">Resting: </span>
+                          {f.resting.map((r) => r.shortName).join(", ")}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
               {scheduleActionError && (
                 <div className="p-3 bg-red-50 border border-red-200 rounded-xl text-red-700 text-xs font-bold">
                   {scheduleActionError}
@@ -2896,6 +3017,21 @@ function AdminPortalPage() {
                   ))}
                 </select>
               </div>
+
+              {/* Back-to-Back Rest Advisory for Knockout */}
+              {lastScheduledMatch && (lastMatchTeamIds.has(knockoutTeamA) || lastMatchTeamIds.has(knockoutTeamB)) && (
+                <div className="p-3 rounded-xl bg-amber-50 border border-amber-300 text-amber-900 text-xs font-medium flex items-start gap-2">
+                  <AlertTriangle className="h-4 w-4 text-amber-600 shrink-0 mt-0.5" />
+                  <span className="text-[11px] leading-relaxed">
+                    {lastMatchTeamIds.has(knockoutTeamA) && lastMatchTeamIds.has(knockoutTeamB)
+                      ? `Both teams played in previous Match #${lastScheduledMatch.matchNumber}.`
+                      : lastMatchTeamIds.has(knockoutTeamA)
+                      ? `Team "${teams.find((t) => t.id === knockoutTeamA)?.name}" played in previous Match #${lastScheduledMatch.matchNumber}.`
+                      : `Team "${teams.find((t) => t.id === knockoutTeamB)?.name}" played in previous Match #${lastScheduledMatch.matchNumber}.`}
+                    {" "}Ensure adequate rest time is provided before starting this match.
+                  </span>
+                </div>
+              )}
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div>

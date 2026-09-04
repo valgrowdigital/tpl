@@ -345,22 +345,43 @@ export const generateTournamentScheduleServerFn = createServerFn({ method: "POST
     const fixturesToInsert: Omit<SupabaseMatch, "id" | "created_at" | "updated_at">[] = [];
     let matchCount = 1;
 
-    // Generate 9 cross-group fixtures (3 x 3)
-    for (let i = 0; i < input.group1TeamIds.length; i++) {
-      for (let j = 0; j < input.group2TeamIds.length; j++) {
-        const scheduledTime = new Date(baseDate.getTime() + (matchCount - 1) * intervalMinutes * 60 * 1000);
-        const pin = generate4DigitPin(activePins);
-        fixturesToInsert.push({
-          team_a_id: input.group1TeamIds[i],
-          team_b_id: input.group2TeamIds[j],
-          start_time: scheduledTime.toISOString(),
-          status: "scheduled",
-          total_overs: overs,
-          balls_per_over: ballsPerOver,
-          scorer_pin: pin,
-        });
-        matchCount++;
-      }
+    // Optimal zero back-to-back cross-group scheduling sequence:
+    // With Group 1 = [A, B, C] and Group 2 = [X, Y, Z]:
+    // Match 1: A vs X (A, X playing; B, C, Y, Z resting)
+    // Match 2: B vs Y (B, Y playing; A, C, X, Z resting)
+    // Match 3: C vs Z (C, Z playing; A, B, X, Y resting)
+    // Match 4: A vs Y (A, Y playing; B, C, X, Z resting)
+    // Match 5: B vs Z (B, Z playing; A, C, X, Y resting)
+    // Match 6: C vs X (C, X playing; A, B, Y, Z resting)
+    // Match 7: A vs Z (A, Z playing; B, C, X, Y resting)
+    // Match 8: B vs X (B, X playing; A, C, Y, Z resting)
+    // Match 9: C vs Y (C, Y playing; A, B, X, Z resting)
+    // Every consecutive match pair shares 0 teams, ensuring full 1-match rest between games for all teams.
+    const fixtureIndexPairs: [number, number][] = [
+      [0, 0],
+      [1, 1],
+      [2, 2],
+      [0, 1],
+      [1, 2],
+      [2, 0],
+      [0, 2],
+      [1, 0],
+      [2, 1],
+    ];
+
+    for (let idx = 0; idx < fixtureIndexPairs.length; idx++) {
+      const [g1Idx, g2Idx] = fixtureIndexPairs[idx];
+      const scheduledTime = new Date(baseDate.getTime() + idx * intervalMinutes * 60 * 1000);
+      const pin = generate4DigitPin(activePins);
+      fixturesToInsert.push({
+        team_a_id: input.group1TeamIds[g1Idx],
+        team_b_id: input.group2TeamIds[g2Idx],
+        start_time: scheduledTime.toISOString(),
+        status: "scheduled",
+        total_overs: overs,
+        balls_per_over: ballsPerOver,
+        scorer_pin: pin,
+      });
     }
 
     const { data, error } = await supabaseAdmin
