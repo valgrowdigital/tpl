@@ -494,14 +494,9 @@ class LookupCache {
     return player;
   }
 
-  playersOf(teamIdOrSlug: string): Player[] {
-    if (!teamIdOrSlug || teamIdOrSlug.trim() === "") return [];
-    const targetKey = getTeamCanonicalKey(teamIdOrSlug);
-    if (!targetKey) return [];
-    return Array.from(this.playersMap.values()).filter((p) => {
-      if (!p.teamId || p.teamId.trim() === "") return false;
-      return getTeamCanonicalKey(p.teamId) === targetKey;
-    });
+  playersOf(teamIdOrSlug: string | { id?: string; name?: string; slug?: string }): Player[] {
+    if (!teamIdOrSlug) return [];
+    return Array.from(this.playersMap.values()).filter((p) => isPlayerInTeam(p, teamIdOrSlug));
   }
 
   match(id: string): Match | undefined {

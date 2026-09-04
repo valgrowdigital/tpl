@@ -1,13 +1,14 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useState, useMemo, useEffect } from "react";
 import { useObsHandlerMaster } from "@/hooks/useObsHandlerMaster";
-import { Users, Calendar, Trophy, Image as ImageIcon, Folder, Play, Square, Radio, RefreshCw, Maximize2, Target, Handshake, Sparkles, EyeOff, User, Search, Check, ChevronRight } from "lucide-react";
+import { useObsMatchStream } from "@/hooks/useObsMatchStream";
+import { Users, Calendar, Trophy, Image as ImageIcon, Folder, Play, Square, Radio, RefreshCw, Maximize2, Target, Handshake, Sparkles, EyeOff, User, Search, Check, ChevronRight, Flame } from "lucide-react";
 import { GraphicType, obsHandlerService } from "@/lib/obsHandlerService";
 import { useMatches, useTeams, usePlayers } from "@/hooks/useCricketData";
 import { calculateTournamentStats } from "@/lib/scoring/statistics";
 import { GraphicRenderer } from "@/components/obs/GraphicRenderer";
 import { obsStreamRepository } from "@/lib/obsStreamRepository";
-import { lookup } from "@/lib/repositories";
+import { lookup, isPlayerInTeam } from "@/lib/repositories";
 
 export const Route = createFileRoute("/obs-handler/between-matches")({
   component: ObsBetweenMatches,
@@ -18,72 +19,150 @@ function ObsBetweenMatches() {
   const { data: teams = [] } = useTeams();
   const { data: players = [] } = usePlayers();
 
-  const activeId = obsHandlerService.getActiveMatch();
-  const [selectedMatchId, setSelectedMatchId] = useState<string>(() => {
-    return activeId === "auto" ? "" : (activeId || "");
+  const [selectedMatchOverride, setSelectedMatchOverride] = useState<string>(() => {
+    const stored = obsHandlerService.getActiveMatch();
+    return stored === "auto" ? "" : (stored || "");
   });
 
-  const liveMatch = useMemo(() => {
-    if (selectedMatchId) {
-      return matches.find((m) => m.id === selectedMatchId) || matches[0];
-    }
-    return matches.find((m) => m.status === "LIVE") || matches.find((m) => m.status === "READY") || matches[0];
-  }, [selectedMatchId, matches]);
+  // ── Auto-Follow Continuous Match Resolution ───────────────────────────────
+  const autoMatch = useMemo(() => {
+    return (
+      matches.find((m) => m.status === "LIVE") ||
+      matches.find((m) => m.status === "READY") ||
+      matches.find((m) => m.status === "UPCOMING") ||
+      matches[0]
+    );
+  }, [matches]);
 
-  const { activeGraphic, setGraphic, clearGraphic } = useObsHandlerMaster(liveMatch?.id);
+  const liveMatch = useMemo(() => {
+    if (selectedMatchOverride && matches.some((m) => m.id === selectedMatchOverride)) {
+      return matches.find((m) => m.id === selectedMatchOverride);
+    }
+    return autoMatch;
+  }, [selectedMatchOverride, autoMatch, matches]);
+
+  const activeMatchId = liveMatch?.id || "";
+  const stream = useObsMatchStream(activeMatchId);
+  const { activeGraphic, setGraphic, clearGraphic } = useObsHandlerMaster(activeMatchId);
 
   const [duration, setDuration] = useState<number>(5000); // Default 5s
   const [transition, setTransition] = useState<string>("fade");
-  const backgroundStreamUrl = obsStreamRepository.getStreamUrl(liveMatch?.id) || undefined;
+  const backgroundStreamUrl = obsStreamRepository.getStreamUrl(activeMatchId) || undefined;
 
-  // ── Upcoming Batsman Picker State ────────────────────────────────────────
+  // ── Auto-Follow Batting Team in Active Match ───────────────────────────────
+  const activeBattingTeamId = stream.battingTeam?.id || liveMatch?.teamAId || "";
   const [selectedTeamId, setSelectedTeamId] = useState<string>("");
+
+  // Whenever match or batting team changes, auto-switch to active batting team
+  useEffect(() => {
+    if (activeBattingTeamId) {
+      setSelectedTeamId(activeBattingTeamId);
+    } else if (liveMatch?.teamAId) {
+      setSelectedTeamId(liveMatch.teamAId);
+    }
+  }, [activeBattingTeamId, liveMatch?.id]);
+
+  const teamAObj = useMemo(() => {
+    if (!liveMatch?.teamAId) return undefined;
+    return teams.find((t) => t.id === liveMatch.teamAId) || lookup.team(liveMatch.teamAId);
+  }, [liveMatch?.teamAId, teams]);
+
+  const teamBObj = useMemo(() => {
+    if (!liveMatch?.teamBId) return undefined;
+    return teams.find((t) => t.id === liveMatch.teamBId) || lookup.team(liveMatch.teamBId);
+  }, [liveMatch?.teamBId, teams]);
+
+  const currentSelectedTeamObj = useMemo(() => {
+    if (!selectedTeamId) return teamAObj;
+    return teams.find((t) => t.id === selectedTeamId) || lookup.team(selectedTeamId) || teamAObj;
+  }, [selectedTeamId, teams, teamAObj]);
+
+  // Robust Squad Resolution for Selected Team
+  const teamPlayersList = useMemo(() => {
+    if (!selectedTeamId && !currentSelectedTeamObj) return [];
+    const targetTeam = currentSelectedTeamObj || selectedTeamId;
+
+    // 1. Check match setup playing XI if applicable
+    if (liveMatch?.setup?.teamAPlayers && liveMatch.teamAId === selectedTeamId) {
+      const list = liveMatch.setup.teamAPlayers
+        .map((id) => lookup.player(id) || players.find((p) => p.id === id))
+        .filter(Boolean);
+      if (list.length > 0) return list;
+    }
+    if (liveMatch?.setup?.teamBPlayers && liveMatch.teamBId === selectedTeamId) {
+      const list = liveMatch.setup.teamBPlayers
+        .map((id) => lookup.player(id) || players.find((p) => p.id === id))
+        .filter(Boolean);
+      if (list.length > 0) return list;
+    }
+
+    // 2. Resolve using isPlayerInTeam over all players
+    const matchedHook = players.filter((p) => isPlayerInTeam(p, targetTeam));
+    if (matchedHook.length > 0) return matchedHook;
+
+    // 3. Resolve using lookup cache
+    const matchedLookup = lookup.players().filter((p) => isPlayerInTeam(p, targetTeam));
+    if (matchedLookup.length > 0) return matchedLookup;
+
+    // 4. Fallback direct teamId match
+    return players.filter((p) => p.teamId === selectedTeamId);
+  }, [selectedTeamId, currentSelectedTeamObj, liveMatch, players]);
+
+  // Track In-Match Batting Status (Striker, Non-Striker, Out, Upcoming)
+  const categorizedPlayersList = useMemo(() => {
+    const isThisTeamBattingNow = stream.battingTeam?.id && (selectedTeamId === stream.battingTeam.id || isPlayerInTeam({ teamId: selectedTeamId }, stream.battingTeam));
+    const currentInnings = isThisTeamBattingNow ? stream.currentInnings : undefined;
+    const strikerId = currentInnings?.strikerId;
+    const nonStrikerId = currentInnings?.nonStrikerId;
+    const dismissedIds = new Set(
+      (currentInnings?.batters || [])
+        .filter((b) => b.isOut || (b.balls > 0 && b.playerId !== strikerId && b.playerId !== nonStrikerId))
+        .map((b) => b.playerId)
+    );
+
+    return teamPlayersList.map((p) => {
+      const isCurrentStriker = p.id === strikerId;
+      const isCurrentNonStriker = p.id === nonStrikerId;
+      const isOut = dismissedIds.has(p.id);
+      return {
+        ...p,
+        isCurrentStriker,
+        isCurrentNonStriker,
+        isOut,
+      };
+    });
+  }, [teamPlayersList, stream.battingTeam, stream.currentInnings, selectedTeamId]);
+
   const [selectedBatterId, setSelectedBatterId] = useState<string>("");
   const [searchBatterQuery, setSearchBatterQuery] = useState<string>("");
-  const [showBatterPicker, setShowBatterPicker] = useState<boolean>(false);
-
-  // Set default team
-  useEffect(() => {
-    if (liveMatch) {
-      if (!selectedTeamId || (selectedTeamId !== liveMatch.teamAId && selectedTeamId !== liveMatch.teamBId)) {
-        setSelectedTeamId(liveMatch.teamAId);
-      }
-    }
-  }, [liveMatch, selectedTeamId]);
-
-  const currentTeamObj = useMemo(() => {
-    if (!selectedTeamId) return undefined;
-    return teams.find((t) => t.id === selectedTeamId) || lookup.team(selectedTeamId);
-  }, [selectedTeamId, teams]);
-
-  const teamPlayersList = useMemo(() => {
-    if (!selectedTeamId) return [];
-    const teamSquad = lookup.playersOf(selectedTeamId) || [];
-    if (teamSquad.length > 0) return teamSquad;
-    return players.filter((p) => p.teamId === selectedTeamId);
-  }, [selectedTeamId, players]);
 
   const filteredTeamPlayers = useMemo(() => {
-    if (!searchBatterQuery.trim()) return teamPlayersList;
+    if (!searchBatterQuery.trim()) return categorizedPlayersList;
     const q = searchBatterQuery.toLowerCase();
-    return teamPlayersList.filter(
+    return categorizedPlayersList.filter(
       (p) => p.name.toLowerCase().includes(q) || (p.role && p.role.toLowerCase().includes(q))
     );
-  }, [teamPlayersList, searchBatterQuery]);
+  }, [categorizedPlayersList, searchBatterQuery]);
+
+  // Automatically select the next unbatted batter
+  useEffect(() => {
+    if (categorizedPlayersList.length > 0 && (!selectedBatterId || !categorizedPlayersList.some((p) => p.id === selectedBatterId))) {
+      const nextUpcoming = categorizedPlayersList.find((p) => !p.isCurrentStriker && !p.isCurrentNonStriker && !p.isOut) || categorizedPlayersList[0];
+      if (nextUpcoming) {
+        setSelectedBatterId(nextUpcoming.id);
+      }
+    }
+  }, [categorizedPlayersList, selectedBatterId]);
 
   const selectedBatterObj = useMemo(() => {
     if (selectedBatterId) {
-      return teamPlayersList.find((p) => p.id === selectedBatterId);
+      return categorizedPlayersList.find((p) => p.id === selectedBatterId);
     }
-    return teamPlayersList[0];
-  }, [selectedBatterId, teamPlayersList]);
+    return categorizedPlayersList[0];
+  }, [selectedBatterId, categorizedPlayersList]);
 
-  // Set default batter when team changes
-  useEffect(() => {
-    if (teamPlayersList.length > 0 && (!selectedBatterId || !teamPlayersList.some((p) => p.id === selectedBatterId))) {
-      setSelectedBatterId(teamPlayersList[0].id);
-    }
-  }, [teamPlayersList, selectedBatterId]);
+  const isTeamABatting = Boolean(stream.battingTeam?.id && (stream.battingTeam.id === liveMatch?.teamAId || isPlayerInTeam({ teamId: liveMatch?.teamAId }, stream.battingTeam)));
+  const isTeamBBatting = Boolean(stream.battingTeam?.id && (stream.battingTeam.id === liveMatch?.teamBId || isPlayerInTeam({ teamId: liveMatch?.teamBId }, stream.battingTeam)));
 
   const graphics = [
     { id: "NEW_BATTER", label: "NEXT BATSMAN ENTRY", icon: User, desc: "Pick & showcase incoming batsman" },
@@ -102,7 +181,6 @@ function ObsBetweenMatches() {
       return;
     }
     if (type === "NEW_BATTER") {
-      setShowBatterPicker(true);
       if (selectedBatterObj) {
         setGraphic({
           type: "NEW_BATTER",
@@ -110,7 +188,7 @@ function ObsBetweenMatches() {
           payload: {
             transition,
             batterName: selectedBatterObj.name,
-            teamName: currentTeamObj?.name || "Batting Team",
+            teamName: currentSelectedTeamObj?.name || "Batting Team",
             role: selectedBatterObj.role || "Batsman",
             avatar: selectedBatterObj.avatarUrl,
             stats: selectedBatterObj.battingStyle ? `Batting: ${selectedBatterObj.battingStyle}` : undefined,
@@ -151,7 +229,7 @@ function ObsBetweenMatches() {
       payload: {
         transition,
         batterName: selectedBatterObj.name,
-        teamName: currentTeamObj?.name || "Batting Team",
+        teamName: currentSelectedTeamObj?.name || "Batting Team",
         role: selectedBatterObj.role || "Batsman",
         avatar: selectedBatterObj.avatarUrl,
         stats: selectedBatterObj.battingStyle ? `Batting: ${selectedBatterObj.battingStyle}` : undefined,
@@ -163,13 +241,34 @@ function ObsBetweenMatches() {
     <div className="flex flex-col lg:flex-row gap-6 w-full font-sans pb-10">
       <div className="w-full lg:w-[440px] xl:w-[480px] flex flex-col gap-5 flex-shrink-0">
         
+        {/* ── Match Status Card ── */}
+        <div className="bg-[#111111] border border-[#222222] rounded-2xl p-4 shadow-xl flex flex-col gap-2">
+          <div className="flex items-center justify-between">
+            <span className="text-[10px] font-black uppercase tracking-wider text-[#D9A928] bg-[#D9A928]/15 px-2 py-0.5 rounded-md border border-[#D9A928]/40">
+              {!selectedMatchOverride ? "✨ AUTO-TRACKING TOURNAMENT" : "📌 PINNED MATCH"}
+            </span>
+            {liveMatch && (
+              <span className={`text-[9px] font-black uppercase px-2 py-0.5 rounded-full border ${
+                liveMatch.status === "LIVE" ? "bg-red-500/20 text-red-400 border-red-500/30 animate-pulse" : "bg-white/10 text-white/70 border-white/20"
+              }`}>
+                {liveMatch.status === "LIVE" ? "● LIVE NOW" : liveMatch.status}
+              </span>
+            )}
+          </div>
+          {liveMatch && (
+            <p className="text-xs font-black text-white uppercase tracking-wide truncate">
+              MATCH #{String(liveMatch.matchNumber).padStart(2, "0")}: {teamAObj?.name || "Team A"} vs {teamBObj?.name || "Team B"}
+            </p>
+          )}
+        </div>
+
         {/* ── Upcoming Batsman Picker Section ── */}
         <div className="bg-[#111111] border border-[#222222] rounded-2xl p-5 shadow-xl flex flex-col gap-4">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
               <span className="h-2 w-2 rounded-full bg-[#D9A928] animate-pulse" />
               <h3 className="text-[10px] font-black uppercase tracking-widest text-[#D9A928]">
-                Pick & Select Upcoming Batsman
+                Select Upcoming Batsman
               </h3>
             </div>
             <span className="text-[9px] font-black uppercase px-2 py-0.5 rounded-full border bg-[#D9A928]/15 text-[#D9A928] border-[#D9A928]/30">
@@ -178,45 +277,63 @@ function ObsBetweenMatches() {
           </div>
 
           <p className="text-[11px] text-white/60 leading-relaxed">
-            Select the team and pick any batsman to showcase on the live broadcast stream.
+            Pick the batsman from the batting team's roster to broadcast live on screen.
           </p>
 
-          {/* Match & Team Selector Pills */}
+          {/* Team Switcher Tabs (Highlights who is batting right now) */}
           <div className="flex flex-col gap-2.5">
             {liveMatch && (
               <div className="grid grid-cols-2 gap-2">
                 <button
                   type="button"
                   onClick={() => {
-                    setSelectedTeamId(liveMatch.teamAId);
+                    if (liveMatch.teamAId) setSelectedTeamId(liveMatch.teamAId);
                   }}
-                  className={`tap p-2.5 rounded-xl border text-center transition-all ${
+                  className={`tap p-3 rounded-xl border text-left transition-all ${
                     selectedTeamId === liveMatch.teamAId
-                      ? "bg-[#D9A928] text-black border-[#D9A928] font-black"
+                      ? "bg-[#D9A928] text-black border-[#D9A928] font-black shadow-[0_0_15px_rgba(217,169,40,0.4)]"
                       : "bg-[#1A1A1A] border-[#333333] text-white/80 font-bold hover:border-white/30"
                   }`}
                 >
-                  <p className="text-xs uppercase truncate">
-                    {teams.find((t) => t.id === liveMatch.teamAId)?.name || "Team A"}
-                  </p>
-                  <span className="text-[9px] opacity-70">Team A</span>
+                  <div className="flex items-center justify-between">
+                    <p className="text-xs uppercase truncate">
+                      {teamAObj?.name || "Team A"}
+                    </p>
+                    {isTeamABatting && (
+                      <span className={`text-[8px] font-black px-1.5 py-0.2 rounded-full uppercase ${
+                        selectedTeamId === liveMatch.teamAId ? "bg-black text-[#D9A928]" : "bg-[#D9A928]/20 text-[#D9A928]"
+                      }`}>
+                        🏏 BATTING
+                      </span>
+                    )}
+                  </div>
+                  <span className="text-[9px] opacity-75">Team A Roster</span>
                 </button>
 
                 <button
                   type="button"
                   onClick={() => {
-                    setSelectedTeamId(liveMatch.teamBId);
+                    if (liveMatch.teamBId) setSelectedTeamId(liveMatch.teamBId);
                   }}
-                  className={`tap p-2.5 rounded-xl border text-center transition-all ${
+                  className={`tap p-3 rounded-xl border text-left transition-all ${
                     selectedTeamId === liveMatch.teamBId
-                      ? "bg-[#D9A928] text-black border-[#D9A928] font-black"
+                      ? "bg-[#D9A928] text-black border-[#D9A928] font-black shadow-[0_0_15px_rgba(217,169,40,0.4)]"
                       : "bg-[#1A1A1A] border-[#333333] text-white/80 font-bold hover:border-white/30"
                   }`}
                 >
-                  <p className="text-xs uppercase truncate">
-                    {teams.find((t) => t.id === liveMatch.teamBId)?.name || "Team B"}
-                  </p>
-                  <span className="text-[9px] opacity-70">Team B</span>
+                  <div className="flex items-center justify-between">
+                    <p className="text-xs uppercase truncate">
+                      {teamBObj?.name || "Team B"}
+                    </p>
+                    {isTeamBBatting && (
+                      <span className={`text-[8px] font-black px-1.5 py-0.2 rounded-full uppercase ${
+                        selectedTeamId === liveMatch.teamBId ? "bg-black text-[#D9A928]" : "bg-[#D9A928]/20 text-[#D9A928]"
+                      }`}>
+                        🏏 BATTING
+                      </span>
+                    )}
+                  </div>
+                  <span className="text-[9px] opacity-75">Team B Roster</span>
                 </button>
               </div>
             )}
@@ -228,16 +345,16 @@ function ObsBetweenMatches() {
                 type="text"
                 value={searchBatterQuery}
                 onChange={(e) => setSearchBatterQuery(e.target.value)}
-                placeholder="Search batsman by name or role..."
+                placeholder="Search player name or role..."
                 className="w-full bg-[#1A1A1A] border border-[#333333] text-white rounded-xl pl-9 pr-3 py-2 text-xs focus:outline-none focus:border-[#D9A928]"
               />
             </div>
 
-            {/* Scrollable Player Picker List */}
-            <div className="max-h-[190px] overflow-y-auto space-y-1.5 pr-1 border border-white/5 rounded-xl p-1 bg-black/40">
+            {/* Scrollable Player Picker List with Batting Status Badges */}
+            <div className="max-h-[220px] overflow-y-auto space-y-1.5 pr-1 border border-white/5 rounded-xl p-1 bg-black/40">
               {filteredTeamPlayers.length === 0 ? (
                 <div className="p-4 text-center text-xs text-white/40">
-                  No batsmen found for this team.
+                  No batsmen found for this team ({teamPlayersList.length} total squad).
                 </div>
               ) : (
                 filteredTeamPlayers.map((p) => {
@@ -249,14 +366,14 @@ function ObsBetweenMatches() {
                       onClick={() => {
                         setSelectedBatterId(p.id);
                       }}
-                      className={`tap w-full p-2 rounded-lg border text-left flex items-center justify-between transition-all ${
+                      className={`tap w-full p-2.5 rounded-lg border text-left flex items-center justify-between transition-all ${
                         isSelected
                           ? "bg-[#D9A928]/20 border-[#D9A928] text-white shadow-sm"
                           : "bg-[#161616] border-[#262626] text-white/80 hover:bg-[#1E1E1E]"
                       }`}
                     >
                       <div className="flex items-center gap-2.5 min-w-0">
-                        <div className="w-7 h-7 rounded-full border border-[#D9A928]/50 overflow-hidden bg-black flex items-center justify-center flex-shrink-0">
+                        <div className="w-8 h-8 rounded-full border border-[#D9A928]/50 overflow-hidden bg-black flex items-center justify-center flex-shrink-0">
                           {p.avatarUrl ? (
                             <img src={p.avatarUrl} alt={p.name} className="w-full h-full object-cover" />
                           ) : (
@@ -271,11 +388,31 @@ function ObsBetweenMatches() {
                         </div>
                       </div>
 
-                      {isSelected && (
-                        <span className="text-[9px] font-black text-[#D9A928] bg-[#D9A928]/20 px-2 py-0.5 rounded-full border border-[#D9A928]/40">
-                          SELECTED
-                        </span>
-                      )}
+                      <div className="flex items-center gap-1.5 shrink-0">
+                        {p.isCurrentStriker ? (
+                          <span className="text-[8px] font-black bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 px-1.5 py-0.5 rounded">
+                            STRIKER
+                          </span>
+                        ) : p.isCurrentNonStriker ? (
+                          <span className="text-[8px] font-black bg-blue-500/20 text-blue-400 border border-blue-500/30 px-1.5 py-0.5 rounded">
+                            NON-STRIKER
+                          </span>
+                        ) : p.isOut ? (
+                          <span className="text-[8px] font-black bg-red-500/20 text-red-400 border border-red-500/30 px-1.5 py-0.5 rounded">
+                            OUT
+                          </span>
+                        ) : (
+                          <span className="text-[8px] font-black bg-[#D9A928]/20 text-[#D9A928] border border-[#D9A928]/40 px-1.5 py-0.5 rounded">
+                            UPCOMING
+                          </span>
+                        )}
+
+                        {isSelected && (
+                          <span className="text-[9px] font-black text-[#D9A928] bg-[#D9A928]/20 px-2 py-0.5 rounded-full border border-[#D9A928]/40">
+                            ✓ PICKED
+                          </span>
+                        )}
+                      </div>
                     </button>
                   );
                 })
@@ -286,7 +423,7 @@ function ObsBetweenMatches() {
             <button
               disabled={!selectedBatterObj}
               onClick={handleBroadcastSelectedBatter}
-              className={`tap w-full py-3 px-4 rounded-xl font-black uppercase tracking-wider text-xs flex items-center justify-center gap-2 shadow-lg transition-all ${
+              className={`tap w-full py-3.5 px-4 rounded-xl font-black uppercase tracking-wider text-xs flex items-center justify-center gap-2 shadow-lg transition-all ${
                 activeGraphic?.type === "NEW_BATTER" && activeGraphic.payload?.batterName === selectedBatterObj?.name
                   ? "bg-red-600 text-white shadow-[0_0_20px_rgba(220,38,38,0.5)]"
                   : "bg-gradient-to-r from-[#D9A928] to-amber-500 hover:from-amber-400 hover:to-[#D9A928] text-black shadow-[0_0_20px_rgba(217,169,40,0.4)]"
