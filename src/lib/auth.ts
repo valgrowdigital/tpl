@@ -213,6 +213,7 @@ export function useAdminAuth() {
 // 2. SCORER AUTHENTICATION (PURE PIN-BASED AUTHORIZATION)
 // ═════════════════════════════════════════════════════════════════════════════
 
+export const MASTER_ADMIN_PINS = ["2026", "tpl2026", "valgrow", "valgrow123", "admin"];
 const SCORER_PIN_KEY = "tpl_scorer_session_token";
 
 export function useScorerAuth() {
@@ -233,20 +234,34 @@ export function useScorerAuth() {
   });
   const [isLoading, setIsLoading] = useState(false);
 
-  const loginWithPin = useCallback((pin: string): boolean => {
+  const loginWithPin = useCallback((pin: string, matchInfo?: { matchId: string; matchNumber?: number; title?: string }): boolean => {
     const clean = pin.trim().toLowerCase();
-    const MASTER_PINS = ["2026", "tpl2026", "valgrow", "1234", "valgrow123", "admin"];
     
-    // Master passcodes or any 4-digit match PIN
-    if (MASTER_PINS.includes(clean) || clean.length >= 4) {
+    // Master passcodes authorize general scorer session
+    if (MASTER_ADMIN_PINS.includes(clean)) {
       if (typeof window !== "undefined") {
         window.sessionStorage.setItem(SCORER_PIN_KEY, "active");
-        window.sessionStorage.setItem("tpl_scorer_display_label", `Official Scorer (PIN: ${pin.trim()})`);
+        window.sessionStorage.setItem("tpl_scorer_display_label", "Master Official Scorer");
+        window.sessionStorage.setItem("tpl_scorer_auth_type", "master");
       }
       setIsAuthenticated(true);
-      setUserEmail(`Official Scorer (PIN: ${pin.trim()})`);
+      setUserEmail("Master Official Scorer");
       return true;
     }
+
+    // Match-specific PIN authorization
+    if (matchInfo && matchInfo.matchId) {
+      if (typeof window !== "undefined") {
+        window.sessionStorage.setItem(SCORER_PIN_KEY, "active");
+        window.sessionStorage.setItem(`${MATCH_PIN_PREFIX}${matchInfo.matchId}`, pin.trim());
+        window.sessionStorage.setItem("tpl_scorer_display_label", `Official Scorer (Match #${matchInfo.matchNumber || 1})`);
+        window.sessionStorage.setItem("tpl_scorer_auth_type", `match:${matchInfo.matchId}`);
+      }
+      setIsAuthenticated(true);
+      setUserEmail(`Official Scorer (Match #${matchInfo.matchNumber || 1})`);
+      return true;
+    }
+
     return false;
   }, []);
 
@@ -254,6 +269,7 @@ export function useScorerAuth() {
     if (typeof window !== "undefined") {
       window.sessionStorage.removeItem(SCORER_PIN_KEY);
       window.sessionStorage.removeItem("tpl_scorer_display_label");
+      window.sessionStorage.removeItem("tpl_scorer_auth_type");
     }
     try {
       await supabase.auth.signOut();
@@ -288,6 +304,10 @@ export function isMatchScorerAuthorized(matchId: string, matchExpectedPin?: stri
   const adminToken = window.sessionStorage.getItem(ADMIN_SESSION_KEY);
   if (adminToken === "active") return true;
 
+  // 1b. Check if authorized via Master Scorer session
+  const authType = window.sessionStorage.getItem("tpl_scorer_auth_type");
+  if (authType === "master") return true;
+
   // 2. Check match-specific PIN token entered by user
   const storedPin = window.sessionStorage.getItem(`${MATCH_PIN_PREFIX}${matchId}`);
   if (!storedPin) return false;
@@ -296,10 +316,10 @@ export function isMatchScorerAuthorized(matchId: string, matchExpectedPin?: stri
   if (!expected) return true;
 
   // Master passcodes authorize any match
-  const isMaster = ["2026", "tpl2026", "valgrow", "valgrow123", "1234", "admin"].includes(storedPin.toLowerCase());
+  const isMaster = MASTER_ADMIN_PINS.includes(storedPin.toLowerCase());
   if (isMaster) return true;
 
-  return storedPin === expected;
+  return storedPin.trim() === expected;
 }
 
 /**
@@ -312,24 +332,19 @@ export function authorizeMatchScorer(matchId: string, submittedPin: string, expe
   const cleanExpected = (expectedPin || "").trim();
 
   // Validate master passcodes
-  const isMaster = ["2026", "tpl2026", "valgrow", "valgrow123", "1234", "admin"].includes(cleanInput.toLowerCase());
+  const isMaster = MASTER_ADMIN_PINS.includes(cleanInput.toLowerCase());
   if (isMaster) {
     window.sessionStorage.setItem(`${MATCH_PIN_PREFIX}${matchId}`, cleanInput);
     window.sessionStorage.setItem(SCORER_PIN_KEY, "active");
+    window.sessionStorage.setItem("tpl_scorer_auth_type", "master");
     return true;
   }
 
-  // Validate exact 4-digit match PIN match
+  // Validate exact match PIN match
   if (cleanExpected && cleanInput === cleanExpected) {
     window.sessionStorage.setItem(`${MATCH_PIN_PREFIX}${matchId}`, cleanInput);
     window.sessionStorage.setItem(SCORER_PIN_KEY, "active");
-    return true;
-  }
-
-  // If match has no PIN configured yet in database, accept any 4-digit pin
-  if (!cleanExpected && cleanInput.length >= 4) {
-    window.sessionStorage.setItem(`${MATCH_PIN_PREFIX}${matchId}`, cleanInput);
-    window.sessionStorage.setItem(SCORER_PIN_KEY, "active");
+    window.sessionStorage.setItem("tpl_scorer_auth_type", `match:${matchId}`);
     return true;
   }
 

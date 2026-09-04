@@ -35,8 +35,8 @@ export function ScorerPinGate({
       }
     }
 
-    // Global fallback check for field officials
-    if (loginWithPin(cleanPin)) {
+    // Check master passcodes
+    if (loginWithPin(cleanPin, matchId ? { matchId } : undefined)) {
       setError(false);
       onSuccess?.();
     } else {

@@ -250,6 +250,11 @@ export function toPlayer(row: SupabaseRegistration): Player {
  * (startMatchSession flag), never from the database. The database never contains
  * the value "ready" or "upcoming" — those are application-layer labels only.
  */
+export function deriveFallbackMatchPin(matchId: string, matchNumber = 1): string {
+  const num = Math.max(1, matchNumber || 1);
+  return String(2100 + num);
+}
+
 export function toMatch(row: SupabaseMatch, matchNumber = 1): Match {
   let status: MatchStatus = "UPCOMING";
   const raw = (row.status || "").toLowerCase().trim();
@@ -258,17 +263,22 @@ export function toMatch(row: SupabaseMatch, matchNumber = 1): Match {
   // "scheduled" and anything unrecognised → UPCOMING (the safe default)
   else status = "UPCOMING";
 
+  const num = row.match_number || matchNumber;
+  const pin = row.scorer_pin && String(row.scorer_pin).trim().length >= 4
+    ? String(row.scorer_pin).trim()
+    : deriveFallbackMatchPin(row.id, num);
+
   return {
     id: row.id,
     tournament: TOURNAMENT_NAME,
-    matchNumber: row.match_number || matchNumber,
+    matchNumber: num,
     teamAId: row.team_a_id,
     teamBId: row.team_b_id,
     venue: "TPL Cricket Ground",
     overs: row.total_overs || 5,
     scheduledAt: row.start_time,
     status,
-    scorerPin: row.scorer_pin ?? undefined,
+    scorerPin: pin,
     winnerId: row.winner_id ?? undefined,
     resultText: undefined,
     manOfTheMatchId: row.man_of_the_match_id ?? undefined,

@@ -40,23 +40,8 @@ function ProfilePage() {
       return;
     }
 
-    // 1. Check if the PIN belongs to a specific match
-    const matchedMatch = allMatches.find(
-      (m) => (m.scorerPin || "").trim() === cleanPin && m.status !== "COMPLETED"
-    ) || allMatches.find((m) => (m.scorerPin || "").trim() === cleanPin);
-
-    if (matchedMatch) {
-      authorizeMatchScorer(matchedMatch.id, cleanPin, matchedMatch.scorerPin);
-      loginWithPin(cleanPin);
-      navigate({
-        to: "/match/$matchId",
-        params: { matchId: matchedMatch.id },
-      });
-      return;
-    }
-
-    // 2. Check master passcodes
-    const isMaster = ["2026", "tpl2026", "valgrow", "1234", "valgrow123", "admin"].includes(
+    // 1. Check master tournament admin passcodes
+    const isMaster = ["2026", "tpl2026", "valgrow", "valgrow123", "admin"].includes(
       cleanPin.toLowerCase()
     );
 
@@ -66,16 +51,26 @@ function ProfilePage() {
       return;
     }
 
-    // 3. Fallback: If 4+ digits entered, attempt global scorer authorization
-    if (cleanPin.length >= 4) {
-      const ok = loginWithPin(cleanPin);
-      if (ok) {
-        navigate({ to: "/scorer" });
-        return;
-      }
+    // 2. Check if the PIN belongs to a specific match
+    const matchedMatch = allMatches.find(
+      (m) => (m.scorerPin || "").trim() === cleanPin && m.status !== "COMPLETED"
+    ) || allMatches.find((m) => (m.scorerPin || "").trim() === cleanPin);
+
+    if (matchedMatch) {
+      authorizeMatchScorer(matchedMatch.id, cleanPin, matchedMatch.scorerPin);
+      loginWithPin(cleanPin, {
+        matchId: matchedMatch.id,
+        matchNumber: matchedMatch.matchNumber,
+      });
+      navigate({
+        to: "/match/$matchId",
+        params: { matchId: matchedMatch.id },
+      });
+      return;
     }
 
-    setErrorMsg("Invalid Scorer PIN. Please enter the correct 4-digit PIN for your match (or tournament PIN).");
+    // 3. Reject invalid PIN
+    setErrorMsg(`Invalid Scorer PIN "${cleanPin}". Please enter the correct PIN for your match.`);
   };
 
   return (
