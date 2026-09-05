@@ -321,7 +321,7 @@ export function useObsMatchEvents(stream: ObsMatchStreamResult) {
           if (b.runs >= 50) milestonesReachedRef.current.add(`${innIdx}-${b.playerId}-50`);
           if (b.runs >= 100) milestonesReachedRef.current.add(`${innIdx}-${b.playerId}-100`);
         });
-        [50, 100, 150, 200].forEach((m) => {
+        [50, 75, 100, 125, 150, 200].forEach((m) => {
           if (inn.runs >= m) milestonesReachedRef.current.add(`team-milestone-${innIdx}-${m}`);
         });
       });
@@ -492,11 +492,11 @@ export function useObsMatchEvents(stream: ObsMatchStreamResult) {
       }
     });
 
-    // ── 4. TEAM SCORE MILESTONES (50, 100, 150, 200 Runs) ───────────────────
+    // ── 4. TEAM SCORE MILESTONES (50, 75, 100, 125, 150, 200 Runs) ─────────
     if (currentInnings) {
       const innIdx = currentInnings.index;
       const battingTeam = lookup.team(currentInnings.battingTeamId) || teams.find((t) => t.id === currentInnings.battingTeamId);
-      const teamMilestones = [50, 100, 150, 200];
+      const teamMilestones = [50, 75, 100, 125, 150, 200];
 
       teamMilestones.forEach((m) => {
         const key = `team-milestone-${innIdx}-${m}`;
