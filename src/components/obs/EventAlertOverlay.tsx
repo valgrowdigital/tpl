@@ -455,32 +455,162 @@ export function EventAlertOverlay({ event }: EventAlertOverlayProps) {
               </div>
             )}
 
-            {/* ── 8. FIFTY EVENT ───────────────────────────────────────────── */}
+            {/* ── 8. FIFTY EVENT (Half Century Landmark Alert) ───────────────── */}
             {event.type === "FIFTY" && (
-              <div className="relative bg-[#111111]/95 text-white border-2 border-[#D9A928] rounded-2xl p-6 shadow-2xl flex flex-col items-center gap-2 backdrop-blur-xl">
-                <div className="text-xs font-black uppercase tracking-[0.2em] text-[#D9A928]">
-                  HALF CENTURY
-                </div>
-                <div className="text-2xl font-black uppercase text-white">
-                  {event.batterName}
-                </div>
-                <div className="text-5xl font-black text-[#D9A928] font-mono">
-                  {event.runs}
+              <div className="relative flex flex-col items-center justify-center">
+                <div className="absolute -inset-20 bg-gradient-to-r from-[#D9A928]/40 via-amber-400/30 to-[#D9A928]/40 blur-3xl rounded-full pointer-events-none animate-pulse" />
+
+                <div className="relative bg-gradient-to-b from-[#181818]/98 via-[#0F0F0F]/98 to-black/98 border-2 border-[#D9A928] rounded-3xl p-7 sm:p-9 shadow-[0_0_90px_rgba(217,169,40,0.65),0_0_40px_rgba(0,0,0,0.9)] backdrop-blur-2xl flex flex-col items-center text-center min-w-[360px] max-w-[500px]">
+                  
+                  {/* Shimmer effect */}
+                  <div className="absolute inset-0 rounded-3xl overflow-hidden pointer-events-none">
+                    <div className="absolute inset-0 bg-gradient-to-r from-transparent via-[#D9A928]/25 to-transparent -translate-x-full animate-[shimmer_1.3s_infinite]" />
+                  </div>
+
+                  {/* Top Badge */}
+                  <div className="inline-flex items-center gap-2 px-4 py-1 rounded-full bg-[#D9A928]/20 border border-[#D9A928]/60 mb-3 shadow-inner">
+                    <Trophy className="w-3.5 h-3.5 text-[#D9A928] animate-bounce" />
+                    <span className="text-xs font-black uppercase tracking-[0.3em] text-[#D9A928]">
+                      HALF CENTURY
+                    </span>
+                    <Trophy className="w-3.5 h-3.5 text-[#D9A928] animate-bounce" />
+                  </div>
+
+                  {/* Batsman Avatar */}
+                  <div className="w-20 h-20 sm:w-24 sm:h-24 rounded-full border-2 border-[#D9A928] overflow-hidden mb-2 shadow-[0_0_25px_rgba(217,169,40,0.4)] bg-gradient-to-br from-[#222222] to-black flex items-center justify-center flex-shrink-0">
+                    {event.avatar ? (
+                      <img src={event.avatar} alt={event.batterName} className="w-full h-full object-cover" />
+                    ) : (
+                      <User className="w-10 h-10 text-[#D9A928]" />
+                    )}
+                  </div>
+
+                  {/* Big 50 Runs Header */}
+                  <div className="text-4xl sm:text-5xl font-black font-mono text-transparent bg-clip-text bg-gradient-to-b from-[#FFF0B3] via-[#D9A928] to-[#8C6205] leading-none drop-shadow-[0_10px_20px_rgba(0,0,0,0.8)] my-1">
+                    50 RUNS
+                  </div>
+
+                  {/* Batter Name */}
+                  <div className="text-xl sm:text-2xl font-black uppercase tracking-wide text-white drop-shadow-md my-1 truncate max-w-[400px]">
+                    {event.batterName}
+                  </div>
+
+                  {/* Team Badge */}
+                  {event.teamName && (
+                    <div className="px-3 py-0.5 rounded-full bg-white/10 border border-white/20 text-[11px] font-extrabold uppercase tracking-wider text-white/90 mb-2">
+                      {event.teamName}
+                    </div>
+                  )}
+
+                  {/* Performance Breakdown Pill */}
+                  <div className="flex flex-wrap items-center justify-center gap-1.5 my-2">
+                    <span className="px-3 py-1 rounded-lg bg-[#D9A928]/25 border border-[#D9A928]/60 text-xs font-mono font-black text-[#FFF0B3] shadow-sm">
+                      {event.runs} ({event.balls}b)
+                    </span>
+                    {typeof event.fours === "number" && (
+                      <span className="px-2.5 py-1 rounded-lg bg-emerald-500/20 border border-emerald-400/40 text-xs font-mono font-bold text-emerald-300 shadow-sm">
+                        {event.fours} x 4s
+                      </span>
+                    )}
+                    {typeof event.sixes === "number" && (
+                      <span className="px-2.5 py-1 rounded-lg bg-amber-500/20 border border-amber-400/40 text-xs font-mono font-bold text-amber-300 shadow-sm">
+                        {event.sixes} x 6s
+                      </span>
+                    )}
+                    {typeof event.strikeRate === "number" && event.strikeRate > 0 && (
+                      <span className="px-2.5 py-1 rounded-lg bg-black/60 border border-white/10 text-xs font-mono font-bold text-white/80 shadow-sm">
+                        SR {event.strikeRate.toFixed(1)}
+                      </span>
+                    )}
+                  </div>
+
+                  {/* Footer Branding */}
+                  <div className="w-full pt-4 border-t border-[#D9A928]/40 flex items-center justify-center gap-2.5 mt-2">
+                    <img src="/valgrow-labs-logo.jpeg" alt="ValGrow Labs" className="h-5 w-5 rounded object-cover shadow-md" />
+                    <p className="text-[11px] font-black uppercase tracking-[0.2em] text-white">
+                      <span className="text-[#D9A928]">POWERED BY</span> VALGROW LABS
+                    </p>
+                  </div>
                 </div>
               </div>
             )}
 
-            {/* ── 9. CENTURY EVENT ─────────────────────────────────────────── */}
+            {/* ── 9. CENTURY EVENT (100 Runs Landmark Alert) ─────────────────── */}
             {event.type === "CENTURY" && (
-              <div className="relative bg-[#111111]/95 text-white border-2 border-[#D9A928] rounded-2xl p-6 shadow-2xl flex flex-col items-center gap-2 backdrop-blur-xl">
-                <div className="text-xs font-black uppercase tracking-[0.2em] text-[#D9A928]">
-                  MAGNIFICENT CENTURY
-                </div>
-                <div className="text-2xl font-black uppercase text-white">
-                  {event.batterName}
-                </div>
-                <div className="text-6xl font-black text-[#D9A928] font-mono">
-                  {event.runs}
+              <div className="relative flex flex-col items-center justify-center">
+                <div className="absolute -inset-24 bg-gradient-to-r from-amber-400/50 via-[#D9A928]/40 to-amber-400/50 blur-3xl rounded-full pointer-events-none animate-pulse" />
+
+                <div className="relative bg-gradient-to-b from-[#181818]/98 via-[#0F0F0F]/98 to-black/98 border-2 border-[#D9A928] rounded-3xl p-7 sm:p-9 shadow-[0_0_100px_rgba(217,169,40,0.75),0_0_40px_rgba(0,0,0,0.9)] backdrop-blur-2xl flex flex-col items-center text-center min-w-[360px] max-w-[500px]">
+                  
+                  {/* Shimmer effect */}
+                  <div className="absolute inset-0 rounded-3xl overflow-hidden pointer-events-none">
+                    <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent -translate-x-full animate-[shimmer_1.2s_infinite]" />
+                  </div>
+
+                  {/* Top Badge */}
+                  <div className="inline-flex items-center gap-2 px-4 py-1 rounded-full bg-[#D9A928]/25 border border-[#D9A928]/70 mb-3 shadow-inner">
+                    <Sparkles className="w-3.5 h-3.5 text-[#D9A928] animate-spin" />
+                    <span className="text-xs font-black uppercase tracking-[0.3em] text-[#D9A928]">
+                      MAGNIFICENT CENTURY
+                    </span>
+                    <Sparkles className="w-3.5 h-3.5 text-[#D9A928] animate-spin" />
+                  </div>
+
+                  {/* Batsman Avatar */}
+                  <div className="w-20 h-20 sm:w-24 sm:h-24 rounded-full border-2 border-[#D9A928] overflow-hidden mb-2 shadow-[0_0_30px_rgba(217,169,40,0.5)] bg-gradient-to-br from-[#222222] to-black flex items-center justify-center flex-shrink-0">
+                    {event.avatar ? (
+                      <img src={event.avatar} alt={event.batterName} className="w-full h-full object-cover" />
+                    ) : (
+                      <User className="w-10 h-10 text-[#D9A928]" />
+                    )}
+                  </div>
+
+                  {/* Big 100 Runs Header */}
+                  <div className="text-5xl sm:text-6xl font-black font-mono text-transparent bg-clip-text bg-gradient-to-b from-[#FFF0B3] via-[#D9A928] to-[#8C6205] leading-none drop-shadow-[0_12px_24px_rgba(0,0,0,0.8)] my-1">
+                    100 RUNS
+                  </div>
+
+                  {/* Batter Name */}
+                  <div className="text-xl sm:text-2xl font-black uppercase tracking-wide text-white drop-shadow-md my-1 truncate max-w-[400px]">
+                    {event.batterName}
+                  </div>
+
+                  {/* Team Badge */}
+                  {event.teamName && (
+                    <div className="px-3 py-0.5 rounded-full bg-white/10 border border-white/20 text-[11px] font-extrabold uppercase tracking-wider text-white/90 mb-2">
+                      {event.teamName}
+                    </div>
+                  )}
+
+                  {/* Performance Breakdown Pill */}
+                  <div className="flex flex-wrap items-center justify-center gap-1.5 my-2">
+                    <span className="px-3 py-1 rounded-lg bg-[#D9A928]/25 border border-[#D9A928]/60 text-xs font-mono font-black text-[#FFF0B3] shadow-sm">
+                      {event.runs} ({event.balls}b)
+                    </span>
+                    {typeof event.fours === "number" && (
+                      <span className="px-2.5 py-1 rounded-lg bg-emerald-500/20 border border-emerald-400/40 text-xs font-mono font-bold text-emerald-300 shadow-sm">
+                        {event.fours} x 4s
+                      </span>
+                    )}
+                    {typeof event.sixes === "number" && (
+                      <span className="px-2.5 py-1 rounded-lg bg-amber-500/20 border border-amber-400/40 text-xs font-mono font-bold text-amber-300 shadow-sm">
+                        {event.sixes} x 6s
+                      </span>
+                    )}
+                    {typeof event.strikeRate === "number" && event.strikeRate > 0 && (
+                      <span className="px-2.5 py-1 rounded-lg bg-black/60 border border-white/10 text-xs font-mono font-bold text-white/80 shadow-sm">
+                        SR {event.strikeRate.toFixed(1)}
+                      </span>
+                    )}
+                  </div>
+
+                  {/* Footer Branding */}
+                  <div className="w-full pt-4 border-t border-[#D9A928]/40 flex items-center justify-center gap-2.5 mt-2">
+                    <img src="/valgrow-labs-logo.jpeg" alt="ValGrow Labs" className="h-5 w-5 rounded object-cover shadow-md" />
+                    <p className="text-[11px] font-black uppercase tracking-[0.2em] text-white">
+                      <span className="text-[#D9A928]">POWERED BY</span> VALGROW LABS
+                    </p>
+                  </div>
                 </div>
               </div>
             )}

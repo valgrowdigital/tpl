@@ -55,8 +55,13 @@ export type ObsBroadcastEvent =
       priority: number;
       durationMs: number;
       batterName: string;
+      teamName?: string;
+      avatar?: string;
       runs: number;
       balls: number;
+      fours?: number;
+      sixes?: number;
+      strikeRate?: number;
     }
   | {
       id: string;
@@ -64,8 +69,13 @@ export type ObsBroadcastEvent =
       priority: number;
       durationMs: number;
       batterName: string;
+      teamName?: string;
+      avatar?: string;
       runs: number;
       balls: number;
+      fours?: number;
+      sixes?: number;
+      strikeRate?: number;
     }
   | {
       id: string;
@@ -462,37 +472,61 @@ export function useObsMatchEvents(stream: ObsMatchStreamResult) {
           tournamentTotalFours: (tournamentStats?.totalFours ?? 0) + 1,
         });
       }
-
-      // Check Batting Milestones (50 / 100)
-      if (currentInnings) {
-        const innIdx = currentInnings.index;
-        if (runs >= 100 && !milestonesReachedRef.current.has(`${innIdx}-${deliv.strikerId}-100`)) {
-          milestonesReachedRef.current.add(`${innIdx}-${deliv.strikerId}-100`);
-          enqueueEvent({
-            id: `century-${innIdx}-${deliv.strikerId}`,
-            type: "CENTURY",
-            priority: EVENT_PRIORITIES.CENTURY,
-            durationMs: getCustomEventDuration(3200),
-            batterName: batter,
-            runs,
-            balls,
-          });
-        } else if (runs >= 50 && !milestonesReachedRef.current.has(`${innIdx}-${deliv.strikerId}-50`)) {
-          milestonesReachedRef.current.add(`${innIdx}-${deliv.strikerId}-50`);
-          enqueueEvent({
-            id: `fifty-${innIdx}-${deliv.strikerId}`,
-            type: "FIFTY",
-            priority: EVENT_PRIORITIES.FIFTY,
-            durationMs: getCustomEventDuration(3000),
-            batterName: batter,
-            runs,
-            balls,
-          });
-        }
-      }
     });
 
-    // ── 4. TEAM SCORE MILESTONES (50, 75, 100, 125, 150, 200 Runs) ─────────
+    // ── 4. BATTING MILESTONES (50 / 100 Runs - Half Century & Century) ─────────
+    if (currentInnings) {
+      const innIdx = currentInnings.index;
+      const battingTeam = lookup.team(currentInnings.battingTeamId) || teams.find((t) => t.id === currentInnings.battingTeamId);
+
+      currentInnings.batters?.forEach((b) => {
+        if (!b?.playerId) return;
+        const batterName = getPlayerName(b.playerId);
+        const avatar = getPlayerAvatar(b.playerId);
+        const strikeRate = b.balls > 0 ? (b.runs / b.balls) * 100 : 0;
+
+        // Check Century (100)
+        const centuryKey = `${innIdx}-${b.playerId}-100`;
+        if (b.runs >= 100 && !milestonesReachedRef.current.has(centuryKey)) {
+          milestonesReachedRef.current.add(centuryKey);
+          enqueueEvent({
+            id: `century-${centuryKey}`,
+            type: "CENTURY",
+            priority: EVENT_PRIORITIES.CENTURY,
+            durationMs: getCustomEventDuration(4200),
+            batterName,
+            teamName: battingTeam?.name,
+            avatar,
+            runs: b.runs,
+            balls: b.balls,
+            fours: b.fours,
+            sixes: b.sixes,
+            strikeRate,
+          });
+        }
+        // Check Half Century (50)
+        else if (b.runs >= 50 && !milestonesReachedRef.current.has(`${innIdx}-${b.playerId}-50`)) {
+          const fiftyKey = `${innIdx}-${b.playerId}-50`;
+          milestonesReachedRef.current.add(fiftyKey);
+          enqueueEvent({
+            id: `fifty-${fiftyKey}`,
+            type: "FIFTY",
+            priority: EVENT_PRIORITIES.FIFTY,
+            durationMs: getCustomEventDuration(4000),
+            batterName,
+            teamName: battingTeam?.name,
+            avatar,
+            runs: b.runs,
+            balls: b.balls,
+            fours: b.fours,
+            sixes: b.sixes,
+            strikeRate,
+          });
+        }
+      });
+    }
+
+    // ── 5. TEAM SCORE MILESTONES (50, 75, 100, 125, 150, 200 Runs) ─────────
     if (currentInnings) {
       const innIdx = currentInnings.index;
       const battingTeam = lookup.team(currentInnings.battingTeamId) || teams.find((t) => t.id === currentInnings.battingTeamId);
