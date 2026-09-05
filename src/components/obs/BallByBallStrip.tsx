@@ -1,11 +1,12 @@
 import type { BallSummary } from "@/types/cricket";
+import { BALLS_PER_OVER } from "@/types/cricket";
 
 interface BallByBallStripProps {
   recentBalls: BallSummary[];
   maxDeliveries?: number;
 }
 
-export function BallByBallStrip({ recentBalls, maxDeliveries = 8 }: BallByBallStripProps) {
+export function BallByBallStrip({ recentBalls, maxDeliveries = BALLS_PER_OVER }: BallByBallStripProps) {
   const displayBalls = recentBalls.slice(-maxDeliveries);
 
   if (displayBalls.length === 0) {

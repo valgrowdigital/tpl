@@ -209,7 +209,7 @@ export function ScoreboardBar({ stream, sponsor }: ScoreboardBarProps) {
 
         {/* SECTION 5: Recent Deliveries Strip (Col 10-12) */}
         <div className="col-span-3 px-3.5 py-3 flex flex-col justify-center bg-[#111111]/90 min-w-0">
-          <BallByBallStrip recentBalls={recentBalls} maxDeliveries={8} />
+          <BallByBallStrip recentBalls={recentBalls} maxDeliveries={5} />
         </div>
 
       </div>
