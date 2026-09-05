@@ -123,42 +123,42 @@ export function ScoreboardBar({ stream, sponsor }: ScoreboardBarProps) {
           </div>
         </div>
 
-        {/* SECTION 2: Team, Score & Overs (Col 3-5) */}
-        <div className="col-span-3 px-5 py-3 flex items-center justify-between bg-[#1A1A1A]/80">
-          <div>
-            <div className="text-sm font-black uppercase tracking-wider text-white truncate max-w-[160px]">
+        {/* SECTION 2: Team, Score & Overs (Col 3-4) */}
+        <div className="col-span-2 px-3.5 py-3 flex items-center justify-between bg-[#1A1A1A]/80 min-w-0">
+          <div className="min-w-0 pr-1">
+            <div className="text-xs font-black uppercase tracking-wider text-white truncate max-w-[120px]">
               {battingName}
             </div>
-            <div className="text-[11px] font-bold text-white/60">
+            <div className="text-[10px] font-bold text-white/60">
               CRR: <strong className="text-white font-mono">{crr.toFixed(2)}</strong>
             </div>
           </div>
 
-          <div className="text-right">
-            <div className="text-2xl sm:text-3xl font-black font-mono tracking-tight text-white leading-none">
+          <div className="text-right shrink-0">
+            <div className="text-xl sm:text-2xl font-black font-mono tracking-tight text-white leading-none">
               <span className="text-[#D9A928]">{runs}</span>
-              <span className="text-white/40 mx-1">/</span>
+              <span className="text-white/40 mx-0.5">/</span>
               <span>{wickets}</span>
             </div>
-            <div className="text-xs font-black text-white/80 font-mono tracking-wide mt-1">
-              {currentOversText} <span className="text-white/50 text-[10px] uppercase">/ {maxOvers}.0 OV</span>
+            <div className="text-[10px] font-black text-white/80 font-mono tracking-wide mt-1">
+              {currentOversText} <span className="text-white/50 text-[9px] uppercase">/ {maxOvers}.0 OV</span>
             </div>
           </div>
         </div>
 
-        {/* SECTION 3: Active Batsmen (Col 6-8) */}
-        <div className="col-span-3 px-4 py-2 flex flex-col justify-center gap-1.5 bg-[#111111]/80">
+        {/* SECTION 3: Active Batsmen (Col 5-7) */}
+        <div className="col-span-3 px-3.5 py-2 flex flex-col justify-center gap-1.5 bg-[#111111]/80 min-w-0">
           {/* Striker */}
           <div className="flex items-center justify-between text-xs">
-            <div className="flex items-center gap-1.5 min-w-0 pr-2">
+            <div className="flex items-center gap-1 min-w-0 pr-1.5">
               <span className="text-[#D9A928] font-black text-sm leading-none">*</span>
-              <span className="font-extrabold uppercase text-white truncate max-w-[140px]">
+              <span className="font-extrabold uppercase text-white truncate max-w-[130px]">
                 {striker?.name || "Striker"}
               </span>
             </div>
             <div className="font-mono font-black tabular-nums text-right shrink-0">
-              <span className="text-[#D9A928] text-sm">{strikerStats?.runs ?? 0}</span>
-              <span className="text-white/50 text-[11px] font-normal ml-1">
+              <span className="text-[#D9A928] text-xs font-bold">{strikerStats?.runs ?? 0}</span>
+              <span className="text-white/50 text-[10px] font-normal ml-0.5">
                 ({strikerStats?.balls ?? 0})
               </span>
             </div>
@@ -166,50 +166,50 @@ export function ScoreboardBar({ stream, sponsor }: ScoreboardBarProps) {
 
           {/* Non-Striker */}
           <div className="flex items-center justify-between text-xs opacity-75">
-            <div className="flex items-center gap-1.5 min-w-0 pr-2">
+            <div className="flex items-center gap-1 min-w-0 pr-1.5">
               <span className="invisible text-sm leading-none">*</span>
-              <span className="font-bold uppercase text-white/90 truncate max-w-[140px]">
+              <span className="font-bold uppercase text-white/90 truncate max-w-[130px]">
                 {nonStriker?.name || "Non-Striker"}
               </span>
             </div>
             <div className="font-mono font-bold tabular-nums text-right shrink-0">
               <span className="text-white text-xs">{nonStrikerStats?.runs ?? 0}</span>
-              <span className="text-white/50 text-[11px] font-normal ml-1">
+              <span className="text-white/50 text-[10px] font-normal ml-0.5">
                 ({nonStrikerStats?.balls ?? 0})
               </span>
             </div>
           </div>
         </div>
 
-        {/* SECTION 4: Active Bowler (Col 9-10) */}
-        <div className="col-span-2 px-4 py-3 flex flex-col justify-between bg-[#1A1A1A]/80">
+        {/* SECTION 4: Active Bowler (Col 8-9) */}
+        <div className="col-span-2 px-3.5 py-3 flex flex-col justify-between bg-[#1A1A1A]/80 min-w-0">
           <div className="flex items-center justify-between">
-            <span className="text-[10px] font-black uppercase text-[#D9A928] tracking-wider">
+            <span className="text-[9px] font-black uppercase text-[#D9A928] tracking-wider">
               BOWLER
             </span>
-            <span className="text-[10px] font-mono text-white/50">
+            <span className="text-[9px] font-mono text-white/50">
               Econ: {bowlerStats ? bowlerStats.economy.toFixed(1) : "0.0"}
             </span>
           </div>
 
           <div className="flex items-center justify-between mt-1">
-            <span className="font-extrabold text-xs uppercase text-white truncate max-w-[110px]">
+            <span className="font-extrabold text-xs uppercase text-white truncate max-w-[95px]">
               {bowler?.name || "Bowler"}
             </span>
-            <div className="font-mono font-black text-xs tabular-nums text-right">
+            <div className="font-mono font-black text-xs tabular-nums text-right shrink-0">
               <span>{bowlerStats?.wickets ?? 0}</span>
               <span className="text-white/40 mx-0.5">/</span>
               <span className="text-[#D9A928]">{bowlerStats?.runs ?? 0}</span>
-              <span className="text-white/50 text-[10px] ml-1">
+              <span className="text-white/50 text-[9px] ml-0.5">
                 ({bowlerStats ? oversText(bowlerStats.legalBalls) : "0.0"})
               </span>
             </div>
           </div>
         </div>
 
-        {/* SECTION 5: Recent Deliveries Strip (Col 11-12) */}
-        <div className="col-span-2 px-4 py-3 flex flex-col justify-center bg-[#111111]/90">
-          <BallByBallStrip recentBalls={recentBalls} maxDeliveries={6} />
+        {/* SECTION 5: Recent Deliveries Strip (Col 10-12) */}
+        <div className="col-span-3 px-3.5 py-3 flex flex-col justify-center bg-[#111111]/90 min-w-0">
+          <BallByBallStrip recentBalls={recentBalls} maxDeliveries={8} />
         </div>
 
       </div>
