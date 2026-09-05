@@ -66,6 +66,10 @@ export function ScoreboardBar({ stream, sponsor }: ScoreboardBarProps) {
 
   const battingName = battingTeam?.shortName || battingTeam?.name || "BATTING";
 
+  // Derive balls for the active in-progress over only. If over is complete, start fresh for next over.
+  const lastGroup = currentInnings?.overGroups?.[currentInnings.overGroups.length - 1];
+  const currentOverBalls = (lastGroup && !lastGroup.complete) ? (lastGroup.balls || []) : [];
+
   return (
     <div className="w-full flex flex-col items-center">
       {/* Target & Match Context Pill (if in 2nd Innings chase) */}
@@ -146,13 +150,13 @@ export function ScoreboardBar({ stream, sponsor }: ScoreboardBarProps) {
           </div>
         </div>
 
-        {/* SECTION 3: Active Batsmen (Col 5-7) */}
-        <div className="col-span-3 px-3.5 py-2 flex flex-col justify-center gap-1.5 bg-[#111111]/80 min-w-0">
+        {/* SECTION 3: Active Batsmen (Col 5-8) */}
+        <div className="col-span-4 px-4 py-2 flex flex-col justify-center gap-1.5 bg-[#111111]/80 min-w-0">
           {/* Striker */}
           <div className="flex items-center justify-between text-xs">
             <div className="flex items-center gap-1 min-w-0 pr-1.5">
               <span className="text-[#D9A928] font-black text-sm leading-none">*</span>
-              <span className="font-extrabold uppercase text-white truncate max-w-[130px]">
+              <span className="font-extrabold uppercase text-white truncate max-w-[170px]">
                 {striker?.name || "Striker"}
               </span>
             </div>
@@ -168,7 +172,7 @@ export function ScoreboardBar({ stream, sponsor }: ScoreboardBarProps) {
           <div className="flex items-center justify-between text-xs opacity-75">
             <div className="flex items-center gap-1 min-w-0 pr-1.5">
               <span className="invisible text-sm leading-none">*</span>
-              <span className="font-bold uppercase text-white/90 truncate max-w-[130px]">
+              <span className="font-bold uppercase text-white/90 truncate max-w-[170px]">
                 {nonStriker?.name || "Non-Striker"}
               </span>
             </div>
@@ -181,7 +185,7 @@ export function ScoreboardBar({ stream, sponsor }: ScoreboardBarProps) {
           </div>
         </div>
 
-        {/* SECTION 4: Active Bowler (Col 8-9) */}
+        {/* SECTION 4: Active Bowler (Col 9-10) */}
         <div className="col-span-2 px-3.5 py-3 flex flex-col justify-between bg-[#1A1A1A]/80 min-w-0">
           <div className="flex items-center justify-between">
             <span className="text-[9px] font-black uppercase text-[#D9A928] tracking-wider">
@@ -193,7 +197,7 @@ export function ScoreboardBar({ stream, sponsor }: ScoreboardBarProps) {
           </div>
 
           <div className="flex items-center justify-between mt-1">
-            <span className="font-extrabold text-xs uppercase text-white truncate max-w-[95px]">
+            <span className="font-extrabold text-xs uppercase text-white truncate max-w-[105px]">
               {bowler?.name || "Bowler"}
             </span>
             <div className="font-mono font-black text-xs tabular-nums text-right shrink-0">
@@ -207,9 +211,9 @@ export function ScoreboardBar({ stream, sponsor }: ScoreboardBarProps) {
           </div>
         </div>
 
-        {/* SECTION 5: Recent Deliveries Strip (Col 10-12) */}
-        <div className="col-span-3 px-3.5 py-3 flex flex-col justify-center bg-[#111111]/90 min-w-0">
-          <BallByBallStrip recentBalls={recentBalls} maxDeliveries={5} />
+        {/* SECTION 5: Recent Deliveries Strip (Col 11-12) */}
+        <div className="col-span-2 px-3 py-2 flex flex-col justify-center bg-[#111111]/90 min-w-0">
+          <BallByBallStrip recentBalls={currentOverBalls} maxDeliveries={5} />
         </div>
 
       </div>
