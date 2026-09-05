@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import type { MatchStore } from "@/lib/scoring/store";
 import { lookup } from "@/lib/repositories";
+import { obsHandlerService } from "@/lib/obsHandlerService";
 import { BALLS_PER_OVER } from "@/types/cricket";
 import { ScoreHeader } from "@/components/scoring/ScoreHeader";
 import { BatterPanel } from "@/components/scoring/BatterPanel";
@@ -258,6 +259,26 @@ export function LiveScoringScreen({ store }: Props) {
           onSelect={(id) => {
             setBatter(id, currentBatterRole);
             setManualBatterModal(false);
+
+            // Automatically broadcast new incoming batsman overlay on screen
+            const player = lookup.player(id);
+            const team = lookup.team(innings.battingTeamId);
+            if (player && match?.id) {
+              obsHandlerService.broadcastState(
+                match.id,
+                {
+                  type: "NEW_BATTER",
+                  duration: 4500,
+                  payload: {
+                    batterName: player.name,
+                    teamName: team?.name || "Batting Team",
+                    role: player.role && player.role !== "Unspecified" ? player.role : "Player",
+                    avatar: player.avatar,
+                  },
+                },
+                "SCORER",
+              );
+            }
           }}
           onClose={activeStrikerId && activeNonStrikerId ? () => setManualBatterModal(false) : undefined}
         />
@@ -274,6 +295,26 @@ export function LiveScoringScreen({ store }: Props) {
           onSelect={(id) => {
             setBowler(id);
             setManualBowlerModal(false);
+
+            // Automatically broadcast new bowler overlay on screen
+            const player = lookup.player(id);
+            const team = lookup.team(innings.bowlingTeamId);
+            if (player && match?.id) {
+              obsHandlerService.broadcastState(
+                match.id,
+                {
+                  type: "NEW_BOWLER",
+                  duration: 4000,
+                  payload: {
+                    bowlerName: player.name,
+                    teamName: team?.name || "Bowling Team",
+                    role: player.role && player.role !== "Unspecified" ? player.role : "Bowler",
+                    avatar: player.avatar,
+                  },
+                },
+                "SCORER",
+              );
+            }
           }}
           onClose={activeBowlerId ? () => setManualBowlerModal(false) : undefined}
           isOverEnd={innings.overGroups.length > 0}

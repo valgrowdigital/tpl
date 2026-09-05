@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import type { Match } from "@/types/cricket";
 import type { MatchStore } from "@/lib/scoring/store";
 import { lookup, playerRepository } from "@/lib/repositories";
+import { obsHandlerService } from "@/lib/obsHandlerService";
 import { UserPlus, UserCheck, X, ChevronRight, Check } from "lucide-react";
 
 interface Props {
@@ -58,6 +59,25 @@ export function OpenersScreen({ match, store, secondInnings = false, embedded = 
       startSecondInnings(openers);
     } else {
       updateSetup({ openers });
+    }
+
+    // Automatically broadcast opener on screen
+    const player = lookup.player(strikerId);
+    if (player && match?.id) {
+      obsHandlerService.broadcastState(
+        match.id,
+        {
+          type: "NEW_BATTER",
+          duration: 4500,
+          payload: {
+            batterName: player.name,
+            teamName: battingTeam?.name || "Batting Team",
+            role: player.role && player.role !== "Unspecified" ? player.role : "Player",
+            avatar: player.avatar,
+          },
+        },
+        "SCORER",
+      );
     }
   };
 

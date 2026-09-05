@@ -214,6 +214,8 @@ export function useObsMatchEvents(stream: ObsMatchStreamResult) {
   const processedDeliveryIdsRef = useRef<Set<string>>(new Set());
   const milestonesReachedRef = useRef<Set<string>>(new Set());
   const lastActiveBowlerIdRef = useRef<string | null>(null);
+  const lastStrikerIdRef = useRef<string | null>(null);
+  const lastNonStrikerIdRef = useRef<string | null>(null);
   const knownActiveBatterIdsRef = useRef<Set<string>>(new Set());
   const lastCompletedOverRef = useRef<number>(-1);
   const lastPhaseRef = useRef<string | null>(null);
@@ -287,6 +289,8 @@ export function useObsMatchEvents(stream: ObsMatchStreamResult) {
       milestonesReachedRef.current.clear();
       knownActiveBatterIdsRef.current.clear();
       lastActiveBowlerIdRef.current = null;
+      lastStrikerIdRef.current = null;
+      lastNonStrikerIdRef.current = null;
       lastCompletedOverRef.current = -1;
       lastPhaseRef.current = null;
       queueRef.current = [];
@@ -325,8 +329,16 @@ export function useObsMatchEvents(stream: ObsMatchStreamResult) {
         lastActiveBowlerIdRef.current = currentInnings.currentBowlerId;
       }
 
-      if (currentInnings?.strikerId) knownActiveBatterIdsRef.current.add(currentInnings.strikerId);
-      if (currentInnings?.nonStrikerId) knownActiveBatterIdsRef.current.add(currentInnings.nonStrikerId);
+      if (allDeliveries.length > 0) {
+        // Only mark batters who have actually faced balls as already seen
+        currentInnings?.batters?.forEach((b) => {
+          if (b.balls > 0) {
+            knownActiveBatterIdsRef.current.add(b.playerId);
+          }
+        });
+        if (currentInnings?.strikerId) lastStrikerIdRef.current = currentInnings.strikerId;
+        if (currentInnings?.nonStrikerId) lastNonStrikerIdRef.current = currentInnings.nonStrikerId;
+      }
 
       lastCompletedOverRef.current = Math.floor(
         currentInnings?.legalBalls ? currentInnings.legalBalls / BALLS_PER_OVER : 0,
@@ -549,9 +561,14 @@ export function useObsMatchEvents(stream: ObsMatchStreamResult) {
     if (currentInnings) {
       const battingTeam = lookup.team(currentInnings.battingTeamId) || teams.find((t) => t.id === currentInnings.battingTeamId);
       
-      const checkBatterEntry = (batterId?: string) => {
+      const checkBatterEntry = (batterId?: string, isStriker = true) => {
         if (!batterId) return;
-        if (!knownActiveBatterIdsRef.current.has(batterId)) {
+        const lastId = isStriker ? lastStrikerIdRef.current : lastNonStrikerIdRef.current;
+        const isNewSlot = batterId !== lastId;
+        if (isStriker) lastStrikerIdRef.current = batterId;
+        else lastNonStrikerIdRef.current = batterId;
+
+        if (!knownActiveBatterIdsRef.current.has(batterId) || isNewSlot) {
           knownActiveBatterIdsRef.current.add(batterId);
           const batterStats = currentInnings.batters.find((b) => b.playerId === batterId);
           if ((batterStats?.balls ?? 0) <= 1) {
@@ -559,18 +576,18 @@ export function useObsMatchEvents(stream: ObsMatchStreamResult) {
               id: `new-batter-${batterId}-${Date.now()}`,
               type: "NEW_BATTER",
               priority: EVENT_PRIORITIES.NEW_BATTER,
-              durationMs: getCustomEventDuration(3800),
+              durationMs: getCustomEventDuration(4200),
               batterName: getPlayerName(batterId),
               teamName: battingTeam?.name,
-              role: getPlayerRole(batterId),
+              role: getPlayerRole(batterId) && getPlayerRole(batterId) !== "Unspecified" ? getPlayerRole(batterId) : undefined,
               avatar: getPlayerAvatar(batterId),
             });
           }
         }
       };
 
-      checkBatterEntry(stream.striker?.id || currentInnings.strikerId);
-      checkBatterEntry(stream.nonStriker?.id || currentInnings.nonStrikerId);
+      checkBatterEntry(stream.striker?.id || currentInnings.strikerId, true);
+      checkBatterEntry(stream.nonStriker?.id || currentInnings.nonStrikerId, false);
     }
 
     // ── 7. PARTNERSHIP MILESTONE DETECTION (30, 50, 75, 100, 150 runs) ──────
