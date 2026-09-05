@@ -165,20 +165,21 @@ export type ObsBroadcastEvent =
     };
 
 // Priority map (Higher number = higher priority)
+// Immediate ball events (WICKET, SIX, FOUR, NO_BALL) execute FIRST, followed by milestones (CENTURY, FIFTY, PARTNERSHIP)
 const EVENT_PRIORITIES = {
   MATCH_RESULT: 100,
-  INNINGS_BREAK: 90,
-  WICKET: 80,
-  CENTURY: 70,
-  NO_BALL: 65,
+  INNINGS_BREAK: 95,
+  WICKET: 90,
+  SIX: 85,
+  FOUR: 80,
+  NO_BALL: 75,
+  CENTURY: 65,
   FIFTY: 60,
-  TEAM_MILESTONE: 58,
   PARTNERSHIP: 55,
-  SIX: 50,
-  FOUR: 45,
-  NEW_BATTER: 40,
-  OVER_COMPLETE: 30,
-  NEW_BOWLER: 20,
+  TEAM_MILESTONE: 50,
+  OVER_COMPLETE: 35,
+  NEW_BATTER: 30,
+  NEW_BOWLER: 25,
   MATCH_START: 10,
 };
 
